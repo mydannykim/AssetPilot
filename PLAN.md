@@ -44,18 +44,18 @@
 
 ## Phase 3 — MCP 서버 구축
 - [x] MCP 서버 스캐폴딩 (Python `mcp` SDK 2.0, `MCPServer` 클래스 — `fastmcp`가 아니라 `mcp.server.MCPServer`임을 실제 패키지로 확인)
-- [x] Tool 정의: `get_accounts`, `get_holdings`, `get_quote`, `get_allocation`, `get_asset_history` (뉴스 관련 툴은 Phase 4 이후 추가 예정)
+- [x] Tool 정의: `get_accounts`, `get_holdings`, `get_quote`, `get_allocation`, `get_asset_history`, `get_market_flow`, `collect_news`, `get_news`
 - [x] Claude Code 설정에 로컬 MCP 서버 등록(`.mcp.json`) 및 stdio 프로토콜 연동 테스트 완료 (실API 응답까지 확인)
 - [ ] 인증정보(토큰) MCP 프로세스 내 안전한 접근 방식 설계 — 현재는 서버 프로세스 내 `.env` 직접 로드, 별도 격리 없음
-- [ ] 인증정보(토큰) MCP 프로세스 내 안전한 접근 방식 설계
 
 ## Phase 4 — 뉴스 수집 & 트렌드 탐지
-- [ ] 뉴스 소스 선정 (국내: 네이버금융/언론사 RSS, 해외: NewsAPI 등 — 결정 필요)
-- [ ] 수집 파이프라인 구축 (스케줄러 기반 주기적 수집)
-- [ ] 보유 종목 ↔ 뉴스 매핑 (종목명/티커 키워드 필터링)
-- [ ] Claude API로 뉴스 요약 + 감성분석(긍정/부정/중립) + 시장영향도 판단
-- [ ] 유사 이슈 클러스터링으로 "트렌드" 탐지
-- [ ] 분석 결과 저장 및 이력 관리
+- [x] 뉴스 소스 선정 — 구글 뉴스 RSS 검색 (무료, API 키 불필요, `feedparser` + `httpx`로 실검증 완료). 해외 종목은 티커만으로는 노이즈가 커서(예: "VOO"→포뮬러1 기사 오매칭) 토스 종목정보 API의 영문 정식명+유형(ETF/주식)을 붙여 검색어를 보강함
+- [x] 수집 파이프라인 구축 — `assetpilot news` / MCP `collect_news` (보유 종목 기준 수동 실행. 스케줄러 자동화는 launchd snapshot과 별도로 미연동 상태)
+- [x] 보유 종목 ↔ 뉴스 매핑 — 종목명(우선주 표기 제거) 또는 영문 정식명으로 검색, `news_items.related_symbols`에 종목코드 저장
+- [x] 국내 종목 매매동향/공매도/매수유의 데이터 연동 — `assetpilot trends` / MCP `get_market_flow` (외국인·기관 순매수 스트릭, 공매도 비중). 해외 종목은 토스 API 자체가 미지원
+- [ ] AI 요약/감성분석/시장영향도 판단 — **의도적으로 미구현**. `sentiment`/`summary` 컬럼은 비워둔 채 원문만 저장하고, 해석은 Claude Code 세션에서 대화형으로 수행(빌링 설정 전까지 Anthropic API 미사용 방침)
+- [ ] 유사 이슈 클러스터링으로 "트렌드" 탐지 — AI 분석 이후 단계, 보류
+- [ ] 분석 결과 저장 및 이력 관리 — AI 분석 결과가 생기면 `sentiment`/`summary` 컬럼에 채우는 방식으로 확장 예정
 
 ## Phase 5 — 실시간 인사이트 통합
 - [ ] 스케줄러로 주기적 파이프라인 실행 (장중 주기 결정)

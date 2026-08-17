@@ -6,11 +6,14 @@ import click
 
 from .analysis.allocation import compute_allocation
 from .analysis.fx import fetch_fx_rates_to_krw
+from .analysis.market_flow import summarize_market_flow
 from .analysis.models import parse_holdings
 from .analysis.report import generate_report
 from .config import load_settings
 from .dashboard import write_dashboard
+from .news.collector import collect_news_for_holdings
 from .storage.db import init_db
+from .storage.news import list_news
 from .storage.portfolio import save_holdings_snapshot
 from .toss_client.client import TossClient
 
@@ -158,6 +161,67 @@ def dashboard_cmd(account_seq: str | None, threshold: float, open_browser: bool)
 
     if open_browser:
         webbrowser.open(output_path.resolve().as_uri())
+
+
+@main.command("trends")
+@click.argument("symbol")
+@click.option("--days", default=5, help="집계할 최근 영업일 수 (기본 5일)")
+def trends_cmd(symbol: str, days: int) -> None:
+    """국내 종목의 투자자별 매매동향/공매도/매수유의 정보를 요약해 출력한다 (국내 종목 전용)."""
+    settings = load_settings()
+    with TossClient(
+        client_id=settings.toss_client_id,
+        client_secret=settings.toss_client_secret,
+        base_url=settings.toss_api_base_url,
+    ) as client:
+        investor = client.get_investor_trading(symbol)
+        short = client.get_short_selling(symbol)
+        warnings = client.get_stock_warnings(symbol)
+
+    summary = summarize_market_flow(symbol, investor, short, warnings, days=days)
+    click.echo(f"[{symbol}] 최근 {len(summary.days)}영업일 매매동향")
+    click.echo(f"  외국인: {summary.foreigner_net_sum:+,.0f}주 ({summary.foreigner_streak})")
+    click.echo(f"  기관:   {summary.institution_net_sum:+,.0f}주 ({summary.institution_streak})")
+    click.echo(f"  개인:   {summary.individual_net_sum:+,.0f}주")
+    if summary.short_selling_volume_rate is not None:
+        click.echo(f"  공매도 비중: {summary.short_selling_volume_rate:.2%} (최근 거래일)")
+    if summary.warnings:
+        click.echo(f"  ⚠ 매수 유의사항 {summary.warning_count}건: {summary.warnings}")
+
+
+@main.command("news")
+@click.option("--account-seq", default=None, help="계좌 시퀀스 번호 (생략 시 첫 번째 계좌 사용)")
+@click.option("--max-items", default=8, help="종목당 최대 수집 기사 수 (기본 8)")
+def news_cmd(account_seq: str | None, max_items: int) -> None:
+    """보유 종목 관련 뉴스를 구글 뉴스에서 수집해 로컬 DB에 저장한다 (감성분석 없이 원문만 저장)."""
+    settings = load_settings()
+    with TossClient(
+        client_id=settings.toss_client_id,
+        client_secret=settings.toss_client_secret,
+        base_url=settings.toss_api_base_url,
+    ) as client:
+        _, holdings, fx_rates = _fetch_holdings_and_fx(client, account_seq)
+        portfolio = parse_holdings(holdings, fx_rates)
+        saved_counts = collect_news_for_holdings(client, settings.db_path, portfolio.holdings, max_items)
+
+    for symbol, count in saved_counts.items():
+        click.echo(f"  {symbol}: 신규 {count}건 저장")
+
+
+@main.command("news-list")
+@click.option("--symbol", default=None, help="특정 종목 코드로 필터링 (생략 시 전체)")
+@click.option("--limit", default=20, help="최대 출력 건수 (기본 20)")
+def news_list_cmd(symbol: str | None, limit: int) -> None:
+    """저장된 뉴스 목록을 출력한다."""
+    settings = load_settings()
+    items = list_news(settings.db_path, symbol, limit)
+    if not items:
+        click.echo("저장된 뉴스가 없습니다. `assetpilot news`를 먼저 실행하세요.")
+        return
+    for item in items:
+        click.echo(f"[{item['related_symbols']}] {item['title']}")
+        click.echo(f"    {item['source']} · {item['published_at'] or '날짜 미상'}")
+        click.echo(f"    {item['url']}")
 
 
 @main.command("price")

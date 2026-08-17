@@ -88,3 +88,27 @@ class TossClient:
             "/api/v1/exchange-rate",
             params={"baseCurrency": base_currency, "quoteCurrency": quote_currency},
         )
+
+    # --- 종목 정보 / 동향 데이터 (국내(KR) 종목 전용, 실API로 확인함) ---
+
+    def get_stock_info(self, symbol: str) -> dict[str, Any]:
+        return self._get("/api/v1/stocks", params={"symbols": symbol})
+
+    def get_investor_trading(self, symbol: str) -> dict[str, Any]:
+        """투자자별(개인/외국인/기관) 매매동향."""
+        return self._get(f"/api/v1/stocks/{symbol}/investor-trading")
+
+    def get_short_selling(self, symbol: str) -> dict[str, Any]:
+        return self._get(f"/api/v1/stocks/{symbol}/short-selling")
+
+    def get_credit_trades(self, symbol: str) -> dict[str, Any]:
+        return self._get(f"/api/v1/stocks/{symbol}/credit-trades")
+
+    def get_program_trades(self, symbol: str) -> dict[str, Any]:
+        return self._get(f"/api/v1/stocks/{symbol}/program-trades")
+
+    def get_securities_lending(self, symbol: str) -> dict[str, Any]:
+        return self._get(f"/api/v1/stocks/{symbol}/securities-lending")
+
+    def get_stock_warnings(self, symbol: str) -> dict[str, Any]:
+        return self._get(f"/api/v1/stocks/{symbol}/warnings")
