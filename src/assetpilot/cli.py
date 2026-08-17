@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import webbrowser
+
 import click
 
 from .analysis.allocation import compute_allocation
@@ -7,6 +9,7 @@ from .analysis.fx import fetch_fx_rates_to_krw
 from .analysis.models import parse_holdings
 from .analysis.report import generate_report
 from .config import load_settings
+from .dashboard import write_dashboard
 from .storage.db import init_db
 from .storage.portfolio import save_holdings_snapshot
 from .toss_client.client import TossClient
@@ -131,6 +134,30 @@ def report_cmd(account_seq: str | None) -> None:
         sign = "+" if comparison.diff_amount_krw >= 0 else ""
         pct = f" ({sign}{comparison.diff_pct:.2f}%)" if comparison.diff_pct is not None else ""
         click.echo(f"  {label}: {sign}{comparison.diff_amount_krw:,.0f} KRW{pct}")
+
+
+@main.command("dashboard")
+@click.option("--account-seq", default=None, help="계좌 시퀀스 번호 (생략 시 첫 번째 계좌 사용)")
+@click.option("--threshold", default=0.3, help="집중도 경고 임계치 (기본 0.3 = 30%)")
+@click.option("--open/--no-open", "open_browser", default=True, help="생성 후 기본 브라우저로 열기 (기본값: 열기)")
+def dashboard_cmd(account_seq: str | None, threshold: float, open_browser: bool) -> None:
+    """최신 데이터로 로컬 대시보드 HTML을 생성하고 브라우저로 연다."""
+    settings = load_settings()
+    with TossClient(
+        client_id=settings.toss_client_id,
+        client_secret=settings.toss_client_secret,
+        base_url=settings.toss_api_base_url,
+    ) as client:
+        resolved_seq, holdings, fx_rates = _fetch_holdings_and_fx(client, account_seq)
+        portfolio = parse_holdings(holdings, fx_rates)
+        allocation = compute_allocation(portfolio, threshold)
+
+    history = generate_report(settings.db_path, resolved_seq)
+    output_path = write_dashboard(portfolio, allocation, history, settings.db_path.parent / "dashboard.html")
+    click.echo(f"대시보드 생성 완료: {output_path.resolve()}")
+
+    if open_browser:
+        webbrowser.open(output_path.resolve().as_uri())
 
 
 @main.command("price")

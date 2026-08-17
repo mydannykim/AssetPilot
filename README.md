@@ -32,6 +32,7 @@ assetpilot price 005935            # 종목 현재가 조회
 assetpilot snapshot    # 보유 종목을 스냅샷으로 DB에 기록 (히스토리 리포트의 기반 데이터)
 assetpilot allocation  # 종목별 원화 환산 비중 및 집중도 경고
 assetpilot report      # 저장된 스냅샷 기반 1일/7일/30일 전 대비 평가금액 변화
+assetpilot dashboard   # 최신 데이터로 로컬 HTML 대시보드 생성 후 브라우저로 열기
 ```
 
 `report`는 스냅샷 히스토리가 쌓여야 의미 있는 값을 보여준다.
@@ -52,6 +53,15 @@ launchctl unload ~/Library/LaunchAgents/com.assetpilot.snapshot.plist && \
 ```
 
 실행 로그는 `data/snapshot.log`(`.error.log`)에 쌓인다. 시간을 바꾸려면 `scripts/launchd/com.assetpilot.snapshot.plist`의 `StartCalendarInterval`을 수정한 뒤 `install.sh`를 다시 실행한다.
+
+## 대시보드
+
+```bash
+assetpilot dashboard          # data/dashboard.html 생성 후 기본 브라우저로 열기
+assetpilot dashboard --no-open   # 파일만 생성 (열지 않음)
+```
+
+실행할 때마다 최신 잔고/비중/손익/히스토리로 `data/dashboard.html`을 다시 만든다. 항상 같은 경로(`data/dashboard.html`)에 쓰기 때문에 브라우저 즐겨찾기에 등록해두면, 명령어 재실행 후 새로고침만으로 최신 상태를 볼 수 있다. 렌더링 로직은 `src/assetpilot/dashboard.py`에 있다.
 
 ## MCP 서버 (Claude Code/Desktop 연동)
 
@@ -82,6 +92,7 @@ src/assetpilot/
   mcp_server/    # Claude Code/Desktop용 MCP 서버 (Phase 3)
   cli.py         # CLI 진입점
   config.py      # 환경변수 로딩
+  dashboard.py   # 로컬 HTML 대시보드 렌더링
 scripts/launchd/ # 스냅샷 자동 실행용 launchd plist + 설치 스크립트
 ```
 

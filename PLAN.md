@@ -37,9 +37,10 @@
 ## Phase 2 — 자산 관리 코어 로직
 - [x] 포트폴리오 데이터 모델 설계 (Pydantic `Holding`/`PortfolioSummary`, 환율 반영 원화 환산 포함)
 - [x] 자산 스냅샷 기록 → 시계열 히스토리 DB (`assetpilot snapshot`)
-- [x] 자산 스냅샷 자동 주기 실행 — macOS launchd로 매일 18:00 자동 실행 등록 완료 (`scripts/launchd/`)
+- [x] 자산 스냅샷 자동 주기 실행 — macOS launchd로 하루 2회(16:00 국내장 마감 후, 07:00 미국장 마감 후) 자동 실행 등록 완료 (`scripts/launchd/`)
 - [x] 자산 비중/리밸런싱 분석 로직 — `assetpilot allocation` (종목별 원화 환산 비중, 집중도 임계치 경고)
 - [x] 손익 리포트 생성 — `assetpilot report` (1일/7일/30일 전 대비 평가금액 변화, 스냅샷 히스토리 필요)
+- [x] 로컬 HTML 대시보드 — `assetpilot dashboard` (실행할 때마다 `data/dashboard.html`을 최신 데이터로 재생성, 브라우저 자동 실행)
 
 ## Phase 3 — MCP 서버 구축
 - [x] MCP 서버 스캐폴딩 (Python `mcp` SDK 2.0, `MCPServer` 클래스 — `fastmcp`가 아니라 `mcp.server.MCPServer`임을 실제 패키지로 확인)
