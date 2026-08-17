@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "assetpilot": {
+      "command": "/Users/kimseonghyun/AssetPilot/.venv/bin/assetpilot-mcp",
+      "args": []
+    }
+  }
+}

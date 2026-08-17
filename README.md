@@ -2,7 +2,7 @@
 
 토스증권 Open API와 Claude를 연동해 실시간 자산 관리를 돕고, AI로 주식 시장 뉴스와 트렌드를 탐지하는 프로젝트.
 
-현재 단계: **Phase 2 (자산 분석)**. 자동매매 기능은 의도적으로 이후 단계로 미뤄져 있으며 아직 구현되어 있지 않다. 전체 로드맵은 [PLAN.md](PLAN.md) 참고.
+현재 단계: **Phase 3 (MCP 서버) 완료**. 자동매매 기능은 의도적으로 이후 단계로 미뤄져 있으며 아직 구현되어 있지 않다. 전체 로드맵은 [PLAN.md](PLAN.md) 참고.
 
 ## 시작하기
 
@@ -34,7 +34,38 @@ assetpilot allocation  # 종목별 원화 환산 비중 및 집중도 경고
 assetpilot report      # 저장된 스냅샷 기반 1일/7일/30일 전 대비 평가금액 변화
 ```
 
-`report`는 스냅샷 히스토리가 쌓여야 의미 있는 값을 보여준다. `snapshot`을 주기적으로 실행하도록 cron이나 launchd에 등록해두는 것을 권장한다(예: 장 마감 후 하루 한 번).
+`report`는 스냅샷 히스토리가 쌓여야 의미 있는 값을 보여준다.
+
+## 스냅샷 자동화 (launchd)
+
+`assetpilot snapshot`을 매일 18:00에 자동 실행하도록 등록되어 있다 (macOS launchd 사용).
+
+```bash
+scripts/launchd/install.sh   # 등록/재등록
+launchctl list | grep com.assetpilot.snapshot   # 상태 확인
+launchctl unload ~/Library/LaunchAgents/com.assetpilot.snapshot.plist && \
+  rm ~/Library/LaunchAgents/com.assetpilot.snapshot.plist   # 해제
+```
+
+실행 로그는 `data/snapshot.log`(`.error.log`)에 쌓인다. 시간을 바꾸려면 `scripts/launchd/com.assetpilot.snapshot.plist`의 `StartCalendarInterval`을 수정한 뒤 `install.sh`를 다시 실행한다.
+
+## MCP 서버 (Claude Code/Desktop 연동)
+
+`assetpilot-mcp`가 조회 전용 MCP 서버로 동작하며, `.mcp.json`에 등록되어 있어 이 프로젝트 디렉토리에서 Claude Code를 실행하면 자동으로 인식된다(세션 재시작 필요). 제공하는 도구:
+
+| 도구 | 설명 |
+|---|---|
+| `get_accounts` | 계좌 목록 조회 |
+| `get_holdings` | 보유 종목/평가금액/손익 조회 |
+| `get_quote` | 종목 현재가 조회 |
+| `get_allocation` | 원화 환산 비중 및 집중도 경고 |
+| `get_asset_history` | 저장된 스냅샷 기반 기간별 평가금액 변화 |
+
+수동으로 서버만 확인하려면:
+
+```bash
+assetpilot-mcp   # stdio MCP 서버 실행 (Claude Code가 내부적으로 호출하는 것과 동일)
+```
 
 ## 디렉토리 구조
 
@@ -47,6 +78,7 @@ src/assetpilot/
   mcp_server/    # Claude Code/Desktop용 MCP 서버 (Phase 3)
   cli.py         # CLI 진입점
   config.py      # 환경변수 로딩
+scripts/launchd/ # 스냅샷 자동 실행용 launchd plist + 설치 스크립트
 ```
 
 ## 주의

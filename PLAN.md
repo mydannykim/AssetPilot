@@ -36,14 +36,16 @@
 
 ## Phase 2 — 자산 관리 코어 로직
 - [x] 포트폴리오 데이터 모델 설계 (Pydantic `Holding`/`PortfolioSummary`, 환율 반영 원화 환산 포함)
-- [x] 자산 스냅샷 기록 → 시계열 히스토리 DB (`assetpilot snapshot`). 자동 주기 실행(cron 등)은 아직 사용자가 직접 예약해야 함
+- [x] 자산 스냅샷 기록 → 시계열 히스토리 DB (`assetpilot snapshot`)
+- [x] 자산 스냅샷 자동 주기 실행 — macOS launchd로 매일 18:00 자동 실행 등록 완료 (`scripts/launchd/`)
 - [x] 자산 비중/리밸런싱 분석 로직 — `assetpilot allocation` (종목별 원화 환산 비중, 집중도 임계치 경고)
 - [x] 손익 리포트 생성 — `assetpilot report` (1일/7일/30일 전 대비 평가금액 변화, 스냅샷 히스토리 필요)
 
 ## Phase 3 — MCP 서버 구축
-- [ ] MCP 서버 스캐폴딩 (Python MCP SDK)
-- [ ] Tool 정의: `get_portfolio`, `get_balance`, `get_quote`, `get_asset_history`, `get_news_summary` 등
-- [ ] Claude Code/Desktop 설정에 로컬 MCP 서버 등록 및 연동 테스트
+- [x] MCP 서버 스캐폴딩 (Python `mcp` SDK 2.0, `MCPServer` 클래스 — `fastmcp`가 아니라 `mcp.server.MCPServer`임을 실제 패키지로 확인)
+- [x] Tool 정의: `get_accounts`, `get_holdings`, `get_quote`, `get_allocation`, `get_asset_history` (뉴스 관련 툴은 Phase 4 이후 추가 예정)
+- [x] Claude Code 설정에 로컬 MCP 서버 등록(`.mcp.json`) 및 stdio 프로토콜 연동 테스트 완료 (실API 응답까지 확인)
+- [ ] 인증정보(토큰) MCP 프로세스 내 안전한 접근 방식 설계 — 현재는 서버 프로세스 내 `.env` 직접 로드, 별도 격리 없음
 - [ ] 인증정보(토큰) MCP 프로세스 내 안전한 접근 방식 설계
 
 ## Phase 4 — 뉴스 수집 & 트렌드 탐지
