@@ -38,7 +38,11 @@ assetpilot report      # 저장된 스냅샷 기반 1일/7일/30일 전 대비 �
 
 ## 스냅샷 자동화 (launchd)
 
-`assetpilot snapshot`을 매일 18:00에 자동 실행하도록 등록되어 있다 (macOS launchd 사용).
+`assetpilot snapshot`을 하루 두 번 자동 실행하도록 등록되어 있다 (macOS launchd 사용):
+- **16:00** — 국내(KRX) 장 마감(15:30) 후 30분 뒤
+- **07:00** — 미국 장 마감 이후 (서머타임 여부와 무관하게 커버되도록 여유를 둠)
+
+장중 실시간 반영(시간 단위 등)은 지금 단계에선 하지 않고 추후 필요할 때 고려한다.
 
 ```bash
 scripts/launchd/install.sh   # 등록/재등록
