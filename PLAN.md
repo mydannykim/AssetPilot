@@ -5,28 +5,33 @@
 ## 확정된 방향
 - **매매 범위**: 1단계는 조회·분석 전용(잔고, 시세, 뉴스 인사이트). 자동매매는 2단계로 별도 진행.
 - **배포 형태**: 로컬 CLI/스크립트
-- **Claude 연동**: MCP 서버(대화형 조회) + Claude API(백그라운드 분석·알림) 둘 다
+- **Claude 연동**: MCP 서버(대화형 조회) + Claude API(백그라운드 분석·알림) 둘 다 — 단, Anthropic API 크레딧/빌링 미설정으로 **당분간 보류**. 조회 기능(Phase 1)은 Claude Code(이 세션)와 대화하며 진행하고, 실제 코드 내 Claude API 연동은 빌링 설정 이후 재개.
 
 ## 리스크/전제
-- 토스증권 Open API는 2026년 5월 사전신청 시작, 단계적 롤아웃 중 (2026-08 기준 즉시 발급 여부 재확인 필요). 문서: https://developers.tossinvest.com/docs
+- 토스증권 Open API는 2026년 5월 사전신청 시작, 단계적 롤아웃 중이었으나 **2026-08-17 실API 테스트로 정상 발급·호출 확인 완료** (계좌 조회, 보유종목, 시세, 캔들, 호가 모두 동작).
+- Anthropic API 키는 발급했으나 크레딧 잔액 부족(BillingError) — console.anthropic.com에서 결제수단 등록 필요.
+
+### 실API로 확인된 엔드포인트 세부사항 (문서에 없던 내용)
+- `X-Tossinvest-Account` 헤더 값은 `accountNo`가 아니라 `accounts` 응답의 **`accountSeq`**를 사용해야 함
+- `/api/v1/prices`는 파라미터명이 **`symbols`**(복수), `/api/v1/candles`·`/api/v1/orderbook`은 **`symbol`**(단수) — API 내에서 일관되지 않음
 
 ---
 
 ## Phase 0 — 준비 & 설계
-- [ ] 토스증권 Open API 사전신청 상태 확인, client_id/client_secret 발급 (설정 > Open API)
-- [ ] Claude API 키 발급 (Anthropic Console)
-- [ ] 기술 스택 확정 (제안: Python — httpx/requests, pandas, APScheduler, SQLite, mcp SDK, anthropic SDK)
-- [ ] git 저장소 초기화 및 디렉토리 구조 설계
-- [ ] 시크릿 관리 방식 결정 (.env + .gitignore, 절대 커밋 금지)
-- [ ] 기본 디렉토리 스캐폴딩 (예: `src/toss_client/`, `src/mcp_server/`, `src/news/`, `src/analysis/`, `data/`)
+- [x] 토스증권 Open API 사전신청 상태 확인, client_id/client_secret 발급 (설정 > Open API)
+- [x] Claude API 키 발급 (Anthropic Console) — 빌링 등록은 별도 필요
+- [x] 기술 스택 확정 (Python — httpx, pydantic, apscheduler, click, mcp SDK, anthropic SDK)
+- [x] git 저장소 초기화 및 디렉토리 구조 설계 (GitHub: github.com/mydannykim/AssetPilot)
+- [x] 시크릿 관리 방식 결정 (.env + .gitignore, 절대 커밋 금지)
+- [x] 기본 디렉토리 스캐폴딩 (`src/assetpilot/{toss_client,mcp_server,news,analysis,storage}/`, `data/`)
 
 ## Phase 1 — 토스증권 연동 (조회 전용)
-- [ ] OAuth2 Client Credentials 인증 플로우 구현
-- [ ] 토큰 저장 및 자동 갱신 로직
-- [ ] 계좌 잔고/보유종목 조회 API 연동
-- [ ] 국내(KRX)/미국 시세 조회 API 연동
-- [ ] 응답 데이터 파싱 & 로컬 저장 (SQLite에 스냅샷 기록)
-- [ ] API 에러/레이트리밋 처리 및 재시도 로직
+- [x] OAuth2 Client Credentials 인증 플로우 구현 — 실API 검증 완료
+- [x] 토큰 저장 및 자동 갱신 로직 (만료 60초 전 자동 재발급)
+- [x] 계좌 잔고/보유종목 조회 API 연동 — 실API 검증 완료 (`assetpilot status`, `assetpilot holdings`)
+- [x] 국내(KRX) 시세/캔들/호가 조회 API 연동 — 실API 검증 완료 (`assetpilot price`). 미국 시세는 미검증
+- [ ] 응답 데이터 파싱 & 로컬 저장 (SQLite에 스냅샷 기록) — DB 스키마만 있고 저장 로직 미구현
+- [ ] API 에러/레이트리밋 처리 및 재시도 로직 — 현재는 기본 `raise_for_status`만 있음, 재시도/백오프 없음
 - [ ] 목데이터 기반 단위 테스트
 
 ## Phase 2 — 자산 관리 코어 로직
