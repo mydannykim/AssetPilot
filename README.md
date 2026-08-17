@@ -70,6 +70,33 @@ assetpilot dashboard --no-open   # 파일만 생성 (열지 않음)
 
 대시보드 상단에는 뉴스·매매동향을 바탕으로 한 "AI 브리핑" 패널이 있다. `data/ai_briefing.json`을 읽어서 표시하며, 이 파일이 없으면 빈 상태로 보인다. AssetPilot 코드가 직접 Anthropic API를 호출하지는 않는다 — 대신 Claude Code가 `get_news`/`get_market_flow`로 데이터를 읽고 분석한 결과를 `assetpilot.ai_briefing.save_briefing()`으로 이 파일에 저장하는 방식이다(빌링 없이 Claude Code 세션 자체를 쓰는 방식). 파일 스키마는 `src/assetpilot/ai_briefing.py` 참고.
 
+#### 자동 갱신 (launchd + 헤드리스 Claude)
+
+브리핑을 스냅샷과 같은 시각(16:00, 07:00)에 자동으로 새로 만들도록 구성되어 있다. 두 단계로 나뉜다:
+
+1. `assetpilot prepare-briefing` — 뉴스 수집 + 매매동향 조회를 실행해 `data/briefing_input.json`을 만든다 (순수 데이터 수집, AI 판단 없음)
+2. 헤드리스 `claude -p`가 그 파일을 읽고 분석해 `data/ai_briefing.json`을 쓴다
+
+`.claude/settings.json`에 `Read(data/briefing_input.json)`/`Write(data/ai_briefing.json)` 딱 두 개만 허용해뒀다 — 그 외 파일 접근이나 Bash 실행 권한은 주지 않는다.
+
+**사전 준비 (최초 1회, 사용자가 직접)**: 로컬 `claude` CLI가 별도로 로그인되어 있어야 한다 — 지금 이 대화 세션과는 무관한, 터미널에서 직접 실행하는 `claude` 명령어 자체의 인증이다.
+
+```bash
+claude setup-token   # 자동화용 장기 토큰 발급 (Claude 구독 필요, 권장)
+# 또는
+claude auth login    # 일반 로그인
+```
+
+로그인 후 등록:
+
+```bash
+scripts/launchd/install_briefing.sh
+launchctl list | grep com.assetpilot.briefing   # 상태 확인
+launchctl start com.assetpilot.briefing          # 수동으로 1회 실행해보기
+```
+
+로그 확인: `data/briefing.log` / `data/briefing.error.log`.
+
 ## MCP 서버 (Claude Code/Desktop 연동)
 
 `assetpilot-mcp`가 조회 전용 MCP 서버로 동작하며, `.mcp.json`에 등록되어 있어 이 프로젝트 디렉토리에서 Claude Code를 실행하면 자동으로 인식된다(세션 재시작 필요). 제공하는 도구:

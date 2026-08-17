@@ -9,6 +9,7 @@ from .analysis.fx import fetch_fx_rates_to_krw
 from .analysis.market_flow import summarize_market_flow
 from .analysis.models import parse_holdings
 from .analysis.report import generate_report
+from .briefing_input import build_briefing_input, save_briefing_input
 from .config import load_settings
 from .dashboard import write_dashboard
 from .news.collector import collect_news_for_holdings
@@ -222,6 +223,25 @@ def news_list_cmd(symbol: str | None, limit: int) -> None:
         click.echo(f"[{item['related_symbols']}] {item['title']}")
         click.echo(f"    {item['source']} · {item['published_at'] or '날짜 미상'}")
         click.echo(f"    {item['url']}")
+
+
+@main.command("prepare-briefing")
+@click.option("--account-seq", default=None, help="계좌 시퀀스 번호 (생략 시 첫 번째 계좌 사용)")
+@click.option("--max-news", default=8, help="종목당 최대 뉴스 수 (기본 8)")
+def prepare_briefing_cmd(account_seq: str | None, max_news: int) -> None:
+    """뉴스/매매동향 원자재 데이터를 모아 data/briefing_input.json에 저장한다.
+    AI 판단(감성/요약)은 하지 않는다 — 이 결과를 Claude가 읽고 ai_briefing.json을 만드는 두 단계 구조다."""
+    settings = load_settings()
+    with TossClient(
+        client_id=settings.toss_client_id,
+        client_secret=settings.toss_client_secret,
+        base_url=settings.toss_api_base_url,
+    ) as client:
+        resolved_seq = _resolve_account_seq(client, account_seq)
+        data = build_briefing_input(client, settings.db_path, resolved_seq, max_news)
+
+    path = save_briefing_input(data, settings.db_path.parent / "briefing_input.json")
+    click.echo(f"브리핑 입력 데이터 저장 완료: {path.resolve()} ({len(data.holdings)}개 종목)")
 
 
 @main.command("price")

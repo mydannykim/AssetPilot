@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(data/briefing_input.json)",
+      "Write(data/ai_briefing.json)"
+    ]
+  }
+}
