@@ -1,0 +1,69 @@
+# AssetPilot 개발 계획
+
+토스증권 Open API + Claude 연동 실시간 자산관리 & 뉴스 트렌드 탐지 프로젝트
+
+## 확정된 방향
+- **매매 범위**: 1단계는 조회·분석 전용(잔고, 시세, 뉴스 인사이트). 자동매매는 2단계로 별도 진행.
+- **배포 형태**: 로컬 CLI/스크립트
+- **Claude 연동**: MCP 서버(대화형 조회) + Claude API(백그라운드 분석·알림) 둘 다
+
+## 리스크/전제
+- 토스증권 Open API는 2026년 5월 사전신청 시작, 단계적 롤아웃 중 (2026-08 기준 즉시 발급 여부 재확인 필요). 문서: https://developers.tossinvest.com/docs
+
+---
+
+## Phase 0 — 준비 & 설계
+- [ ] 토스증권 Open API 사전신청 상태 확인, client_id/client_secret 발급 (설정 > Open API)
+- [ ] Claude API 키 발급 (Anthropic Console)
+- [ ] 기술 스택 확정 (제안: Python — httpx/requests, pandas, APScheduler, SQLite, mcp SDK, anthropic SDK)
+- [ ] git 저장소 초기화 및 디렉토리 구조 설계
+- [ ] 시크릿 관리 방식 결정 (.env + .gitignore, 절대 커밋 금지)
+- [ ] 기본 디렉토리 스캐폴딩 (예: `src/toss_client/`, `src/mcp_server/`, `src/news/`, `src/analysis/`, `data/`)
+
+## Phase 1 — 토스증권 연동 (조회 전용)
+- [ ] OAuth2 Client Credentials 인증 플로우 구현
+- [ ] 토큰 저장 및 자동 갱신 로직
+- [ ] 계좌 잔고/보유종목 조회 API 연동
+- [ ] 국내(KRX)/미국 시세 조회 API 연동
+- [ ] 응답 데이터 파싱 & 로컬 저장 (SQLite에 스냅샷 기록)
+- [ ] API 에러/레이트리밋 처리 및 재시도 로직
+- [ ] 목데이터 기반 단위 테스트
+
+## Phase 2 — 자산 관리 코어 로직
+- [ ] 포트폴리오 데이터 모델 설계 (종목, 수량, 평단가, 평가금액, 손익률)
+- [ ] 자산 스냅샷 주기적 기록 → 시계열 히스토리 DB
+- [ ] 자산 비중/리밸런싱 분석 로직
+- [ ] 손익 리포트 생성 (일/주/월 단위)
+
+## Phase 3 — MCP 서버 구축
+- [ ] MCP 서버 스캐폴딩 (Python MCP SDK)
+- [ ] Tool 정의: `get_portfolio`, `get_balance`, `get_quote`, `get_asset_history`, `get_news_summary` 등
+- [ ] Claude Code/Desktop 설정에 로컬 MCP 서버 등록 및 연동 테스트
+- [ ] 인증정보(토큰) MCP 프로세스 내 안전한 접근 방식 설계
+
+## Phase 4 — 뉴스 수집 & 트렌드 탐지
+- [ ] 뉴스 소스 선정 (국내: 네이버금융/언론사 RSS, 해외: NewsAPI 등 — 결정 필요)
+- [ ] 수집 파이프라인 구축 (스케줄러 기반 주기적 수집)
+- [ ] 보유 종목 ↔ 뉴스 매핑 (종목명/티커 키워드 필터링)
+- [ ] Claude API로 뉴스 요약 + 감성분석(긍정/부정/중립) + 시장영향도 판단
+- [ ] 유사 이슈 클러스터링으로 "트렌드" 탐지
+- [ ] 분석 결과 저장 및 이력 관리
+
+## Phase 5 — 실시간 인사이트 통합
+- [ ] 스케줄러로 주기적 파이프라인 실행 (장중 주기 결정)
+- [ ] 알림 채널 결정 및 구현 (터미널/macOS 알림/기타 — 결정 필요)
+- [ ] Claude API로 "오늘의 자산 요약 + 관련 뉴스 브리핑" 생성
+- [ ] CLI 명령어 설계 (`assetpilot status`, `assetpilot news`, `assetpilot brief` 등)
+
+## Phase 6 — 테스트 & 안정화
+- [ ] 통합 테스트 (목데이터 + 실제 API 소량 검증)
+- [ ] 토큰 만료/네트워크 오류 등 예외 시나리오 테스트
+- [ ] 로깅 체계 구축 (요청/응답, 에러 추적)
+- [ ] README 및 설정 가이드 작성
+
+## Phase 7 — (향후 별도 진행) 자동매매 확장
+> 지금 단계에서는 설계만 메모. 실제 구현은 Phase 0~6 완료 후 사용자 요청 시 별도 기획.
+- [ ] 매매 전략 규칙 정의
+- [ ] 리스크 한도(포지션 크기, 일일 손실 한도 등) 설계
+- [ ] 주문 실행 전 승인/확인 절차 설계
+- [ ] 실거래 전 모의투자(paper trading) 검증 단계
