@@ -6,6 +6,7 @@ __pycache__/
 data/*.db
 data/*.sqlite3
 data/dashboard.html
+data/ai_briefing.json
 .DS_Store
 *.log
 .pytest_cache/

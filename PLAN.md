@@ -53,9 +53,10 @@
 - [x] 수집 파이프라인 구축 — `assetpilot news` / MCP `collect_news` (보유 종목 기준 수동 실행. 스케줄러 자동화는 launchd snapshot과 별도로 미연동 상태)
 - [x] 보유 종목 ↔ 뉴스 매핑 — 종목명(우선주 표기 제거) 또는 영문 정식명으로 검색, `news_items.related_symbols`에 종목코드 저장
 - [x] 국내 종목 매매동향/공매도/매수유의 데이터 연동 — `assetpilot trends` / MCP `get_market_flow` (외국인·기관 순매수 스트릭, 공매도 비중). 해외 종목은 토스 API 자체가 미지원
-- [ ] AI 요약/감성분석/시장영향도 판단 — **의도적으로 미구현**. `sentiment`/`summary` 컬럼은 비워둔 채 원문만 저장하고, 해석은 Claude Code 세션에서 대화형으로 수행(빌링 설정 전까지 Anthropic API 미사용 방침)
-- [ ] 유사 이슈 클러스터링으로 "트렌드" 탐지 — AI 분석 이후 단계, 보류
-- [ ] 분석 결과 저장 및 이력 관리 — AI 분석 결과가 생기면 `sentiment`/`summary` 컬럼에 채우는 방식으로 확장 예정
+- [x] AI 요약/감성분석 — `news_items.sentiment`/`summary` 컬럼 대신 별도 `data/ai_briefing.json` + `assetpilot dashboard`의 "AI 브리핑" 패널로 구현. AssetPilot 코드가 Anthropic API를 직접 호출하지 않고, Claude Code가 `get_news`/`get_market_flow`를 읽어 분석한 결과를 `save_briefing()`으로 저장하는 방식(빌링 불필요). 지금은 수동으로 1회 생성해 검증함
+- [ ] AI 브리핑 자동 갱신 — 매일 자동으로 채워지도록 launchd + Claude Code 헤드리스 실행(`claude -p`) 자동화 예정. 로컬 파일/로컬 MCP 서버에 접근해야 해서 클라우드 기반 예약 루틴은 불가능하다는 점 확인함. 권한(승인 없이 자동 실행)에 대해 사용자 확인 필요
+- [ ] 유사 이슈 클러스터링으로 "트렌드" 탐지 — 보류
+- [ ] 시장영향도 판단 세분화 — 보류
 
 ## Phase 5 — 실시간 인사이트 통합
 - [ ] 스케줄러로 주기적 파이프라인 실행 (장중 주기 결정)

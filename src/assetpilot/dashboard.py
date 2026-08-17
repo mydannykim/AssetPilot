@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .ai_briefing import AIBriefing, HoldingBriefing, load_briefing
 from .analysis.allocation import AllocationReport
 from .analysis.models import Holding, PortfolioSummary
 from .analysis.report import PortfolioReport
@@ -67,6 +68,18 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple
 .pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; font-size: 13px; font-weight: 600; width: fit-content; }
 .pill.gain { color: var(--gain); background: var(--gain-bg); }
 .pill.loss { color: var(--loss); background: var(--loss-bg); }
+.pill.neutral { color: var(--text-muted); background: var(--surface-2); }
+.pill.sm { font-size: 11px; padding: 1px 7px; }
+.briefing-summary { font-size: 14px; line-height: 1.6; margin: 0 0 14px; }
+.briefing-holding { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.briefing-holding:last-child { border-bottom: none; padding-bottom: 0; }
+.briefing-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.briefing-name { font-weight: 600; font-size: 13.5px; }
+.briefing-text { font-size: 13px; color: var(--text); line-height: 1.55; margin: 0; }
+.briefing-points { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--text-muted); }
+.briefing-points li { margin-bottom: 2px; }
+.briefing-empty { color: var(--text-muted); font-size: 13px; }
+.briefing-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
 .grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
 @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
 h2.panel-title { margin: 0; font-size: 15px; font-weight: 600; }
@@ -142,6 +155,53 @@ def _pl_arrow(amount: float) -> str:
     return "▲" if amount >= 0 else "▼"
 
 
+_SENTIMENT_CLASS = {"positive": "gain", "neutral": "neutral", "negative": "loss"}
+_SENTIMENT_LABEL = {"positive": "긍정", "neutral": "중립", "negative": "부정"}
+_SENTIMENT_ARROW = {"positive": "▲", "neutral": "―", "negative": "▼"}
+
+
+def _holding_briefing_card(item: HoldingBriefing) -> str:
+    cls = _SENTIMENT_CLASS.get(item.sentiment, "neutral")
+    label = _SENTIMENT_LABEL.get(item.sentiment, item.sentiment)
+    arrow = _SENTIMENT_ARROW.get(item.sentiment, "―")
+    points_html = ""
+    if item.key_points:
+        points = "".join(f"<li>{p}</li>" for p in item.key_points)
+        points_html = f'<ul class="briefing-points">{points}</ul>'
+    return f"""
+    <div class="briefing-holding">
+      <div class="briefing-head">
+        <span class="briefing-name">{item.name}</span>
+        <span class="pill {cls} sm">{arrow} {label}</span>
+      </div>
+      <p class="briefing-text">{item.summary}</p>
+      {points_html}
+    </div>"""
+
+
+def _briefing_section(briefing: AIBriefing | None) -> str:
+    if briefing is None:
+        body = (
+            '<div class="briefing-empty">아직 AI 브리핑이 없습니다. '
+            "Claude Code에서 뉴스/동향을 분석해 저장하면 여기에 표시됩니다.</div>"
+        )
+    else:
+        cards = "\n".join(_holding_briefing_card(h) for h in briefing.holdings)
+        body = f"""<p class="briefing-summary">{briefing.overall_summary}</p>
+        {cards}
+        <div class="briefing-meta">생성 시각: {briefing.generated_at}</div>"""
+
+    return f"""
+  <section class="panel">
+    <div class="panel-head">
+      <h2 class="panel-title">AI 브리핑</h2>
+      <p class="panel-sub">뉴스 · 매매동향 기반 (Claude 분석)</p>
+    </div>
+    <div class="panel-body">{body}
+    </div>
+  </section>"""
+
+
 def _holding_row(holding: Holding, color: str) -> str:
     krw_note = "" if holding.currency == "KRW" else f'<br><span style="font-size:11px;opacity:.7">≈ {_fmt_amount(holding.eval_amount_krw, "KRW")}</span>'
     pl_cls = _pl_class(holding.profit_loss)
@@ -198,6 +258,7 @@ def render_dashboard_html(
     portfolio: PortfolioSummary,
     allocation: AllocationReport,
     history: PortfolioReport | None,
+    briefing: AIBriefing | None = None,
     generated_at: datetime | None = None,
 ) -> str:
     generated_at = generated_at or datetime.now(timezone.utc)
@@ -261,7 +322,7 @@ def render_dashboard_html(
       </div>
     </div>
   </section>
-
+{_briefing_section(briefing)}
   <div class="grid">
     <section class="panel">
       <div class="panel-head">
@@ -325,6 +386,7 @@ def write_dashboard(
     history: PortfolioReport | None,
     output_path: Path = DEFAULT_OUTPUT_PATH,
 ) -> Path:
+    briefing = load_briefing(output_path.parent / "ai_briefing.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(render_dashboard_html(portfolio, allocation, history), encoding="utf-8")
+    output_path.write_text(render_dashboard_html(portfolio, allocation, history, briefing), encoding="utf-8")
     return output_path

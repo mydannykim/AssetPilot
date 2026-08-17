@@ -66,6 +66,10 @@ assetpilot dashboard --no-open   # 파일만 생성 (열지 않음)
 
 실행할 때마다 최신 잔고/비중/손익/히스토리로 `data/dashboard.html`을 다시 만든다. 항상 같은 경로(`data/dashboard.html`)에 쓰기 때문에 브라우저 즐겨찾기에 등록해두면, 명령어 재실행 후 새로고침만으로 최신 상태를 볼 수 있다. 렌더링 로직은 `src/assetpilot/dashboard.py`에 있다.
 
+### AI 브리핑 패널
+
+대시보드 상단에는 뉴스·매매동향을 바탕으로 한 "AI 브리핑" 패널이 있다. `data/ai_briefing.json`을 읽어서 표시하며, 이 파일이 없으면 빈 상태로 보인다. AssetPilot 코드가 직접 Anthropic API를 호출하지는 않는다 — 대신 Claude Code가 `get_news`/`get_market_flow`로 데이터를 읽고 분석한 결과를 `assetpilot.ai_briefing.save_briefing()`으로 이 파일에 저장하는 방식이다(빌링 없이 Claude Code 세션 자체를 쓰는 방식). 파일 스키마는 `src/assetpilot/ai_briefing.py` 참고.
+
 ## MCP 서버 (Claude Code/Desktop 연동)
 
 `assetpilot-mcp`가 조회 전용 MCP 서버로 동작하며, `.mcp.json`에 등록되어 있어 이 프로젝트 디렉토리에서 Claude Code를 실행하면 자동으로 인식된다(세션 재시작 필요). 제공하는 도구:
@@ -101,6 +105,7 @@ src/assetpilot/
   cli.py         # CLI 진입점
   config.py      # 환경변수 로딩
   dashboard.py   # 로컬 HTML 대시보드 렌더링
+  ai_briefing.py # AI 브리핑 파일(data/ai_briefing.json) 스키마/로더
 scripts/launchd/ # 스냅샷 자동 실행용 launchd plist + 설치 스크립트
 ```
 
