@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from .analysis.fx import fetch_fx_rates_to_krw
 from .analysis.market_flow import MarketFlowSummary, summarize_market_flow
 from .analysis.models import Holding, PortfolioSummary, parse_holdings
-from .news.collector import collect_news_for_holdings
+from .news.collector import MARKET_NEWS_SYMBOL, collect_market_news, collect_news_for_holdings
 from .storage.news import list_news
 from .toss_client.client import TossClient
 
@@ -38,6 +38,7 @@ class BriefingInput(BaseModel):
     generated_at: str
     total_eval_amount_krw: float
     holdings: list[BriefingInputHolding]
+    market_news: list[NewsHeadline] = []  # 보유 종목과 무관한 일반 시황 뉴스
 
 
 def build_briefing_input(
@@ -57,6 +58,7 @@ def build_briefing_input(
 
     # 뉴스는 최신 상태로 갱신 후 저장된 것을 읽어온다 (중복은 collector가 알아서 걸러줌)
     collect_news_for_holdings(client, db_path, portfolio.holdings, max_news_per_symbol)
+    collect_market_news(db_path, max_news_per_symbol)
 
     input_holdings = []
     weight_by_symbol = {
@@ -93,10 +95,17 @@ def build_briefing_input(
             )
         )
 
+    market_news_rows = list_news(db_path, MARKET_NEWS_SYMBOL, max_news_per_symbol)
+    market_news = [
+        NewsHeadline(title=r["title"], source=r["source"], published_at=r["published_at"], url=r["url"])
+        for r in market_news_rows
+    ]
+
     return BriefingInput(
         generated_at=datetime.now(timezone.utc).isoformat(),
         total_eval_amount_krw=portfolio.total_eval_amount_krw,
         holdings=input_holdings,
+        market_news=market_news,
     )
 
 

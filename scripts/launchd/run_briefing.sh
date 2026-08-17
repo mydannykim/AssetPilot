@@ -12,15 +12,18 @@ source .venv/bin/activate
 assetpilot prepare-briefing
 
 PROMPT=$(cat <<'EOF'
-data/briefing_input.json 파일을 읽어줘. 보유 종목별 최근 뉴스 제목/출처/발행일과
-(국내 종목만) 투자자별 매매동향·공매도·매수유의 데이터가 들어있어.
+data/briefing_input.json 파일을 읽어줘. 두 축의 데이터가 들어있어:
+1. holdings: 보유 종목별 최근 뉴스 제목/출처/발행일 + (국내 종목만) 투자자별
+   매매동향·공매도·매수유의 데이터
+2. market_news: 보유 종목과 무관한 일반 시황(코스피/코스닥/증시/금리 등) 뉴스
 
-이 데이터를 바탕으로 종목별 감성과 한국어 요약을 작성한 뒤, 아래 JSON 스키마 형식
-그대로 data/ai_briefing.json에 저장해줘 (다른 파일은 읽거나 쓰지 말 것):
+이 데이터를 바탕으로 종목별 감성/요약과, 시황을 반영한 전체 총평을 작성한 뒤
+아래 JSON 스키마 형식 그대로 data/ai_briefing.json에 저장해줘
+(다른 파일은 읽거나 쓰지 말 것):
 
 {
   "generated_at": "<ISO 8601 현재 시각>",
-  "overall_summary": "<포트폴리오 전체에 대한 2~3문장 총평>",
+  "overall_summary": "<market_news의 큰 흐름 + 포트폴리오 상황을 종합한 2~4문장 총평>",
   "holdings": [
     {
       "symbol": "<종목코드>",

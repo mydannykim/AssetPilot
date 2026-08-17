@@ -49,8 +49,8 @@
 - [ ] 인증정보(토큰) MCP 프로세스 내 안전한 접근 방식 설계 — 현재는 서버 프로세스 내 `.env` 직접 로드, 별도 격리 없음
 
 ## Phase 4 — 뉴스 수집 & 트렌드 탐지
-- [x] 뉴스 소스 선정 — 구글 뉴스 RSS 검색 (무료, API 키 불필요, `feedparser` + `httpx`로 실검증 완료). 해외 종목은 티커만으로는 노이즈가 커서(예: "VOO"→포뮬러1 기사 오매칭) 토스 종목정보 API의 영문 정식명+유형(ETF/주식)을 붙여 검색어를 보강함
-- [x] 수집 파이프라인 구축 — `assetpilot news` / MCP `collect_news` (보유 종목 기준 수동 실행. 스케줄러 자동화는 launchd snapshot과 별도로 미연동 상태)
+- [x] 뉴스 소스 선정 — 구글 뉴스 RSS 검색 (무료, API 키 불필요, `feedparser` + `httpx`로 실검증 완료). 해외 종목은 티커만으로는 노이즈가 커서(예: "VOO"→포뮬러1 기사 오매칭) 토스 종목정보 API의 영문 정식명+유형(ETF/주식)을 붙여 검색어를 보강함. 네이버 뉴스 검색 API(공식, 무료, Client ID/Secret 발급 필요)는 확인만 해두고 보류 — 필요해지면 소스만 교체/추가
+- [x] 수집 파이프라인 구축 — `assetpilot news` / MCP `collect_news`가 **2축**으로 수집: (1) 보유 종목별 뉴스, (2) 종목 무관 일반 시황(코스피/증시/금리) 뉴스 — `related_symbols='MARKET'`로 구분 저장. `prepare-briefing`이 매번 최신화하며, 그 외엔 수동 실행
 - [x] 보유 종목 ↔ 뉴스 매핑 — 종목명(우선주 표기 제거) 또는 영문 정식명으로 검색, `news_items.related_symbols`에 종목코드 저장
 - [x] 국내 종목 매매동향/공매도/매수유의 데이터 연동 — `assetpilot trends` / MCP `get_market_flow` (외국인·기관 순매수 스트릭, 공매도 비중). 해외 종목은 토스 API 자체가 미지원
 - [x] AI 요약/감성분석 — `news_items.sentiment`/`summary` 컬럼 대신 별도 `data/ai_briefing.json` + `assetpilot dashboard`의 "AI 브리핑" 패널로 구현. AssetPilot 코드가 Anthropic API를 직접 호출하지 않고, Claude Code가 `get_news`/`get_market_flow`를 읽어 분석한 결과를 `save_briefing()`으로 저장하는 방식(빌링 불필요). 지금은 수동으로 1회 생성해 검증함

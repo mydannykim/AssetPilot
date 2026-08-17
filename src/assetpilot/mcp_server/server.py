@@ -8,7 +8,7 @@ from ..analysis.market_flow import summarize_market_flow
 from ..analysis.models import parse_holdings
 from ..analysis.report import generate_report
 from ..config import load_settings
-from ..news.collector import collect_news_for_holdings
+from ..news.collector import MARKET_NEWS_SYMBOL, collect_market_news, collect_news_for_holdings
 from ..storage.news import list_news
 from ..toss_client.client import TossClient
 
@@ -90,20 +90,24 @@ def get_market_flow(symbol: str, days: int = 5) -> dict:
 
 @mcp.tool()
 def collect_news(account_seq: str | None = None, max_items_per_symbol: int = 8) -> dict:
-    """보유 종목과 관련된 뉴스를 구글 뉴스에서 검색해 로컬 DB에 저장한다.
-    감성분석/요약은 하지 않는다 — 원문 제목/링크만 저장한다. 저장 후 get_news로 읽어서 직접 해석할 것."""
+    """보유 종목별 뉴스 + 일반 시황(코스피/증시 등) 뉴스, 두 축으로 구글 뉴스에서 검색해 로컬 DB에 저장한다.
+    감성분석/요약은 하지 않는다 — 원문 제목/링크만 저장한다. 저장 후 get_news로 읽어서 직접 해석할 것.
+    시황 뉴스는 symbol='MARKET'으로 저장된다."""
     seq = _resolve_account_seq(account_seq)
     _client.set_account(seq)
     holdings = _client.get_holdings()
     currencies = {item.get("currency", "KRW") for item in holdings.get("result", {}).get("items", [])}
     fx_rates = fetch_fx_rates_to_krw(_client, currencies)
     portfolio = parse_holdings(holdings, fx_rates)
-    return collect_news_for_holdings(_client, settings.db_path, portfolio.holdings, max_items_per_symbol)
+    counts = collect_news_for_holdings(_client, settings.db_path, portfolio.holdings, max_items_per_symbol)
+    counts[MARKET_NEWS_SYMBOL] = collect_market_news(settings.db_path, max_items_per_symbol)
+    return counts
 
 
 @mcp.tool()
 def get_news(symbol: str | None = None, limit: int = 20) -> list[dict]:
-    """collect_news로 저장된 뉴스 목록을 조회한다 (제목/출처/링크/발행시각). symbol을 생략하면 전체 종목."""
+    """collect_news로 저장된 뉴스 목록을 조회한다 (제목/출처/링크/발행시각).
+    symbol을 생략하면 전체, 'MARKET'을 지정하면 일반 시황 뉴스만 조회한다."""
     return list_news(settings.db_path, symbol, limit)
 
 

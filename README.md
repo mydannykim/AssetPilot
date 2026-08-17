@@ -34,9 +34,11 @@ assetpilot allocation  # 종목별 원화 환산 비중 및 집중도 경고
 assetpilot report      # 저장된 스냅샷 기반 1일/7일/30일 전 대비 평가금액 변화
 assetpilot dashboard   # 최신 데이터로 로컬 HTML 대시보드 생성 후 브라우저로 열기
 assetpilot trends 005935   # 국내 종목 투자자별 매매동향/공매도/매수유의 요약 (국내 종목 전용)
-assetpilot news        # 보유 종목 관련 뉴스를 구글 뉴스에서 수집해 DB에 저장 (원문만 저장, AI 분석 없음)
-assetpilot news-list    # 저장된 뉴스 목록 출력
+assetpilot news        # 보유 종목별 뉴스 + 일반 시황 뉴스, 2축으로 구글 뉴스에서 수집해 DB에 저장 (원문만 저장, AI 분석 없음)
+assetpilot news-list    # 저장된 뉴스 목록 출력 (--symbol MARKET 이면 시황 뉴스만)
 ```
+
+뉴스는 두 축으로 수집한다: (1) 보유 종목별 뉴스, (2) 종목과 무관한 일반 시황(코스피/코스닥/증시/금리) 뉴스 — `news_items.related_symbols = 'MARKET'`로 구분 저장된다. 소스는 구글 뉴스 RSS(무료, 키 불필요)이며, 네이버 뉴스 API 추가는 보류 상태다(사용 시 네이버 개발자센터에서 Client ID/Secret 발급 필요).
 
 `report`는 스냅샷 히스토리가 쌓여야 의미 있는 값을 보여준다.
 
@@ -109,8 +111,8 @@ launchctl start com.assetpilot.briefing          # 수동으로 1회 실행해�
 | `get_allocation` | 원화 환산 비중 및 집중도 경고 |
 | `get_asset_history` | 저장된 스냅샷 기반 기간별 평가금액 변화 |
 | `get_market_flow` | 국내 종목 투자자별 매매동향/공매도/매수유의 (국내 종목 전용) |
-| `collect_news` | 보유 종목 관련 뉴스를 구글 뉴스에서 수집해 저장 |
-| `get_news` | 저장된 뉴스 목록 조회 (제목/출처/링크) |
+| `collect_news` | 보유 종목별 뉴스 + 일반 시황 뉴스(2축)를 구글 뉴스에서 수집해 저장 |
+| `get_news` | 저장된 뉴스 목록 조회 (제목/출처/링크). symbol='MARKET'이면 시황 뉴스만 |
 
 `collect_news`/`get_news`는 원문만 다루고 감성분석·요약은 하지 않는다 — Claude Code가 `get_news`로 읽어온 제목들을 대화 중에 직접 해석하는 방식을 쓴다 (예: "최근 뉴스 훑어보고 삼성전자 관련 이슈 요약해줘").
 

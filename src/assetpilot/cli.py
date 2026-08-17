@@ -12,7 +12,7 @@ from .analysis.report import generate_report
 from .briefing_input import build_briefing_input, save_briefing_input
 from .config import load_settings
 from .dashboard import write_dashboard
-from .news.collector import collect_news_for_holdings
+from .news.collector import MARKET_NEWS_SYMBOL, collect_market_news, collect_news_for_holdings
 from .storage.db import init_db
 from .storage.news import list_news
 from .storage.portfolio import save_holdings_snapshot
@@ -194,7 +194,7 @@ def trends_cmd(symbol: str, days: int) -> None:
 @click.option("--account-seq", default=None, help="계좌 시퀀스 번호 (생략 시 첫 번째 계좌 사용)")
 @click.option("--max-items", default=8, help="종목당 최대 수집 기사 수 (기본 8)")
 def news_cmd(account_seq: str | None, max_items: int) -> None:
-    """보유 종목 관련 뉴스를 구글 뉴스에서 수집해 로컬 DB에 저장한다 (감성분석 없이 원문만 저장)."""
+    """보유 종목 관련 뉴스 + 일반 시황 뉴스를 구글 뉴스에서 수집해 로컬 DB에 저장한다 (감성분석 없이 원문만 저장)."""
     settings = load_settings()
     with TossClient(
         client_id=settings.toss_client_id,
@@ -205,12 +205,14 @@ def news_cmd(account_seq: str | None, max_items: int) -> None:
         portfolio = parse_holdings(holdings, fx_rates)
         saved_counts = collect_news_for_holdings(client, settings.db_path, portfolio.holdings, max_items)
 
+    saved_counts[MARKET_NEWS_SYMBOL] = collect_market_news(settings.db_path, max_items)
+
     for symbol, count in saved_counts.items():
         click.echo(f"  {symbol}: 신규 {count}건 저장")
 
 
 @main.command("news-list")
-@click.option("--symbol", default=None, help="특정 종목 코드로 필터링 (생략 시 전체)")
+@click.option("--symbol", default=None, help="특정 종목 코드로 필터링 (생략 시 전체, 'MARKET'=일반 시황 뉴스)")
 @click.option("--limit", default=20, help="최대 출력 건수 (기본 20)")
 def news_list_cmd(symbol: str | None, limit: int) -> None:
     """저장된 뉴스 목록을 출력한다."""
