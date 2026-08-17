@@ -34,3 +34,10 @@
 - 뉴스 수집 파이프라인: 구글 뉴스 RSS 기반(무료, API 키 불필요). 해외 종목은 티커만으로 검색하면 노이즈가 커서(예: "VOO"→포뮬러1 기사 오매칭) 토스 종목정보 API로 영문 정식명+유형(ETF/주식)을 붙여 검색어 보강
 - **AI 감성분석/요약은 의도적으로 미구현** — `news_items`의 `sentiment`/`summary` 컬럼은 비워두고 원문만 저장. Anthropic API 빌링 미설정 상태라, 실제 해석은 Claude Code 세션에서 대화형으로 수행하는 방식 채택 (비용 없이 바로 사용 가능)
 - 토스 앱의 자체 AI 분석 기능은 Open API 범위 밖임을 문서로 확인 (뉴스/리포트/컨센서스 엔드포인트 자체가 없음)
+- **뉴스 2축 구조 추가**: (1) 보유 종목별 뉴스 (2) 종목 무관 일반 시황(코스피/코스닥/증시/금리) 뉴스 — `related_symbols='MARKET'`로 구분 저장. 네이버 뉴스 API는 검토 후 보류(공식 API 있으나 별도 Client ID/Secret 발급 필요, 구글 뉴스로 충분히 커버됨)
+- **AI 브리핑 대시보드 패널** 추가 — `data/ai_briefing.json`을 대시보드가 읽어서 종목별 감성/요약/핵심포인트 + 전체 총평을 표시. 실데이터로 생성해 다크/라이트 모드 렌더링 확인
+- **AI 브리핑 자동 갱신 파이프라인 구축** — `assetpilot prepare-briefing`(순수 데이터 수집) → 헤드리스 `claude -p`(`scripts/launchd/run_briefing.sh`)가 분석해 저장, 스냅샷과 동일한 스케줄(16:00/07:00)로 launchd 등록. 과정에서 겪은 문제와 해결:
+  - 로컬 `claude` CLI가 별도 로그인 필요함을 발견 (Claude Code 세션 인증과 무관). `claude setup-token`은 토큰을 자동 저장하지 않고 화면에만 출력하는 방식이라 실패 — `claude auth login`(표준 로그인)으로 해결
+  - 파일쓰기 권한 규칙은 `Write(path)`가 아니라 `Edit(path)`로 검사됨을 확인
+  - 비대화형(`-p`) 모드에서는 프로젝트 `.claude/settings.json`이 워크스페이스 신뢰 절차 때문에 적용되지 않음 → `--permission-mode dontAsk --settings '{...}'`로 그 실행 하나에만 직접 권한(`Edit(data/ai_briefing.json)`)을 넘기는 방식으로 해결
+  - 사용자의 실제 터미널에서 수동 실행 검증 완료 + `launchctl start com.assetpilot.briefing`으로 launchd 트리거 실행까지 검증 완료 (정상적으로 `data/ai_briefing.json` 갱신됨). **Phase 4 AI 브리핑 자동화 파이프라인 전체 완료**

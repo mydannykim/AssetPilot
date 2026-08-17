@@ -1,7 +1,12 @@
 #!/bin/bash
 # 뉴스/매매동향 데이터를 모으고(prepare-briefing), 헤드리스 Claude Code로 분석해
-# data/ai_briefing.json을 갱신한다. .claude/settings.json에 briefing_input.json
-# 읽기 / ai_briefing.json 쓰기만 허용되어 있어 그 외 파일은 건드릴 수 없다.
+# data/ai_briefing.json을 갱신한다.
+#
+# 비대화형(-p) 모드에서는 프로젝트 .claude/settings.json의 permissions.allow가
+# 적용되지 않는다(워크스페이스 신뢰 절차를 건너뛰기 때문) — 그래서 --settings로
+# 이 실행 하나에만 직접 권한을 넘긴다. 파일쓰기 권한은 Write(...)가 아니라
+# Edit(...) 규칙으로 검사되므로 Edit로 지정한다. data/ai_briefing.json 딱
+# 하나만 쓸 수 있고, 그 외 파일은 건드릴 수 없다.
 set -euo pipefail
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
@@ -41,4 +46,6 @@ data/briefing_input.json 파일을 읽어줘. 두 축의 데이터가 들어있�
 EOF
 )
 
-claude -p "$PROMPT" --output-format text --permission-mode default
+SCOPED_SETTINGS='{"permissions":{"allow":["Edit(data/ai_briefing.json)","Edit(//Users/kimseonghyun/AssetPilot/data/ai_briefing.json)"]}}'
+
+claude -p "$PROMPT" --output-format text --permission-mode dontAsk --settings "$SCOPED_SETTINGS"

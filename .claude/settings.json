@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Read(data/briefing_input.json)",
-      "Write(data/ai_briefing.json)"
+      "Read(//Users/kimseonghyun/AssetPilot/data/briefing_input.json)",
+      "Edit(data/ai_briefing.json)",
+      "Edit(//Users/kimseonghyun/AssetPilot/data/ai_briefing.json)"
     ]
   }
 }
