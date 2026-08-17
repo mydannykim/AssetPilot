@@ -83,5 +83,8 @@ class TossClient:
 
     # --- 해외/지표 ---
 
-    def get_exchange_rate(self) -> dict[str, Any]:
-        return self._get("/api/v1/exchange-rate")
+    def get_exchange_rate(self, base_currency: str = "USD", quote_currency: str = "KRW") -> dict[str, Any]:
+        return self._get(
+            "/api/v1/exchange-rate",
+            params={"baseCurrency": base_currency, "quoteCurrency": quote_currency},
+        )

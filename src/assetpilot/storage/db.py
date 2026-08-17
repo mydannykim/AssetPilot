@@ -11,10 +11,12 @@ CREATE TABLE IF NOT EXISTS portfolio_snapshots (
     taken_at TEXT NOT NULL,
     account_id TEXT NOT NULL,
     symbol TEXT NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'KRW',
     quantity REAL NOT NULL,
     avg_price REAL NOT NULL,
     current_price REAL NOT NULL,
     eval_amount REAL NOT NULL,
+    eval_amount_krw REAL NOT NULL,
     profit_loss REAL NOT NULL,
     profit_loss_pct REAL NOT NULL
 );
