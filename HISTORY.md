@@ -61,13 +61,6 @@
 - `toss_client._get` 재시도, `fetch_google_news` 재시도, `summarize_market_flow`의 미확정 레코드 스킵에 경고 로그 추가 — 다음에 비슷한 실패가 나면 로그만 보고 원인 파악 가능하도록
 - 실행 테스트: 정상 커맨드(`assetpilot snapshot`) 로그 기록 확인 + 강제 예외로 `excepthook` 타임스탬프 기록 확인
 - 로깅 작업 중 코드를 살펴보다 **세 번째 버그 발견**: `TossAuth._fetch_token`(토큰 발급)에는 재시도 로직이 없었음 — `TossClient._get`(데이터 조회)만 재시도가 있고, 토큰 발급 자체가 일시적 5xx/429나 네트워크 오류를 만나면 즉시 실패하는 구멍. `_get`과 동일한 재시도 정책 추가
-### Phase 4 — 보류 항목 마무리 (유사 이슈 클러스터링, 시장영향도 세분화)
-- 사용자 질문("이건 너가 해줘야 하는 거지?")에 확인: 이 프로젝트는 처음부터 AI 판단(감성분석 등)을 알고리즘으로 짜지 않고 Claude가 직접 데이터를 읽고 해석하는 방식을 써왔음 — 클러스터링/영향도 판단도 같은 원칙 적용
-- `ai_briefing.py`: `key_points: list[str]` → `key_points: list[KeyPoint]`로 스키마 변경, `KeyPoint`에 `point`(이슈 요약)와 `impact`(high/medium/low) 필드
-- `run_briefing.sh` 프롬프트에 "같은 사안을 다루는 기사들을 하나의 이슈로 묶어서 정리 + 영향도 판단" 명시적으로 요청, 판단 기준(실적 서프라이즈·정책 발표 = high 등) 예시 추가
-- `dashboard.py`: 이슈별 영향도를 도트(●●●/●●○/●○○)로 표시, high는 굵게 강조. 기존 `--warn` 색상(집중도 경고용)과 의미가 겹치지 않도록 별도 톤(텍스트 강조)으로 구현
-- `tests/test_ai_briefing.py` 추가 — `KeyPoint` 기본값/JSON 직렬화 검증 2건, 전체 11개 테스트 통과
-- 스키마가 바뀌어서 기존 `data/ai_briefing.json`(구 스키마)은 파싱 실패 → `load_briefing()`이 `None` 반환(대시보드는 빈 상태로 정상 폴백) 확인 후, `run_briefing.sh` 재실행으로 새 스키마 브리핑 재생성해 검증
 - `pytest`를 dev 의존성으로 도입(`pyproject.toml` `[project.optional-dependencies].dev`), `tests/`에 9개 테스트 작성: 토스 API 재시도(전송 오류/재시도 가능 상태코드/최대 재시도 초과 3종), 토큰 발급 재시도(재시도 가능 vs 즉시 실패 2종), 구글 뉴스 RSS 재시도 2종, 오늘 발견한 매매동향 null 레코드 버그의 회귀 테스트 2종. `httpx.MockTransport`(토스 API)와 `monkeypatch`(뉴스 RSS)로 실제 네트워크 없이 검증, 백오프 대기는 `time.sleep` 무력화로 스킵(`tests/conftest.py`). `TossClient`에 테스트용 `transport` 주입 파라미터 추가. 전체 9개 통과(0.16초) + 실계좌로 `assetpilot status` 재검증까지 완료
 - README 정리 — 그동안 기능별로 흩어져 있던 설정 단계(env, init-db, 스냅샷 launchd, claude 로그인, 브리핑 launchd, terminal-notifier)를 "처음 한 번만 하는 설정" 체크리스트로 한 곳에 모음. **Phase 6(테스트 & 안정화) 4개 항목 전부 완료**
 
@@ -76,3 +69,16 @@
 - `com.assetpilot.snapshot.plist`/`com.assetpilot.briefing.plist`의 `StartCalendarInterval`에 09~15시 엔트리 7개씩 추가 (기존 16:00/07:00과 합쳐 9개 트리거). 처음엔 요일(Weekday 1-5)까지 제한하려다 plist가 35개 엔트리로 불어나서, 기존 16:00/07:00 항목처럼 요일 필터 없이 심플하게 유지하는 쪽으로 되돌림(주말 장중 실행은 시세가 그대로라 사실상 무해)
 - `plutil -lint`로 plist 문법 검증 후 `install.sh`/`install_briefing.sh` 재실행으로 launchd에 반영, `launchctl print`로 calendarinterval 9개 등록 확인
 - 사용자 질문(맥북 꺼짐/와이파이 없을 때 자동 복구되는지, 빈도가 높으면 Claude Pro 사용량이 빨리 닳는지)에 답하며 재조정: (1) launchd `StartCalendarInterval`은 놓친 실행을 나중에 몰아서 재실행해주지 않음(깨어난 뒤엔 별도 조치 없이 다음 예정 시각부터 정상 작동) — 알려주기만 하고 로직 변경은 안 함 (2) 스냅샷(토스 API만 사용)은 Claude 사용량과 무관하니 1시간마다 유지, 브리핑(헤드리스 `claude -p`, Claude Pro 사용량 소모)만 09:00/12:00/15:00(3시간 간격, 기존 포함 총 5개 트리거)로 낮춤. `com.assetpilot.briefing.plist` 재수정 후 재등록, `launchctl print`로 5개 확인. **Phase 5 실질적으로 완료** (남은 건 `assetpilot brief` 같은 통합 CLI 명령 여부뿐, 보류 중)
+
+### Phase 4 — 보류 항목 마무리 (유사 이슈 클러스터링, 시장영향도 세분화)
+- 사용자 질문("이건 너가 해줘야 하는 거지?")에 확인: 이 프로젝트는 처음부터 AI 판단(감성분석 등)을 알고리즘으로 짜지 않고 Claude가 직접 데이터를 읽고 해석하는 방식을 써왔음 — 클러스터링/영향도 판단도 같은 원칙 적용
+- `ai_briefing.py`: `key_points: list[str]` → `key_points: list[KeyPoint]`로 스키마 변경, `KeyPoint`에 `point`(이슈 요약)와 `impact`(high/medium/low) 필드
+- `run_briefing.sh` 프롬프트에 "같은 사안을 다루는 기사들을 하나의 이슈로 묶어서 정리 + 영향도 판단" 명시적으로 요청, 판단 기준(실적 서프라이즈·정책 발표 = high 등) 예시 추가
+- `dashboard.py`: 이슈별 영향도를 도트(●●●/●●○/●○○)로 표시, high는 굵게 강조. 기존 `--warn` 색상(집중도 경고용)과 의미가 겹치지 않도록 별도 톤(텍스트 강조)으로 구현
+- `tests/test_ai_briefing.py` 추가 — `KeyPoint` 기본값/JSON 직렬화 검증 2건, 전체 11개 테스트 통과
+- 스키마가 바뀌어서 기존 `data/ai_briefing.json`(구 스키마)은 파싱 실패 → `load_briefing()`이 `None` 반환(대시보드는 빈 상태로 정상 폴백) 확인 후, `run_briefing.sh` 재실행으로 새 스키마 브리핑 재생성해 검증, 라이트/다크 모드 브라우저 렌더링까지 확인. **Phase 4 보류 항목 전부 완료**
+
+### 조회·분석 영역(Phase 0~6) 마무리
+- [PIPELINE.md](PIPELINE.md) 추가 — 전체 파이프라인이 실제로 어떻게 도는지(자동화 경로 A + MCP 대화형 경로 B, 데이터 저장소, 안정성, 범위/한계)를 한 곳에 정리한 문서. mermaid 다이어그램 포함. README에서 링크
+- Phase 1 체크리스트 중 방치돼 있던 3개 항목(스냅샷 저장, 재시도 로직, 목데이터 테스트) 정리 — 실제로는 Phase 2/6에서 이미 구현 완료였는데 체크박스만 안 지워져 있었음
+- **조회·분석 전 영역(Phase 0~6) 완료.** 남은 보류 항목(MCP 토큰 격리, `assetpilot brief` 통합 명령)은 우선순위 낮아 보류. 자동매매(Phase 7)는 사용자가 나중에 직접 진행하기로 함
