@@ -19,11 +19,18 @@ _logger = logging.getLogger(__name__)
 
 
 class TossClient:
-    def __init__(self, client_id: str, client_secret: str, base_url: str, account_id: str | None = None):
+    def __init__(
+        self,
+        client_id: str,
+        client_secret: str,
+        base_url: str,
+        account_id: str | None = None,
+        transport: httpx.BaseTransport | None = None,
+    ):
         self._base_url = base_url.rstrip("/")
         self._account_id = account_id
         self._auth = TossAuth(client_id, client_secret, base_url)
-        self._http = httpx.Client(timeout=10.0)
+        self._http = httpx.Client(timeout=10.0, transport=transport)
 
     def close(self) -> None:
         self._http.close()

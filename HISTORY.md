@@ -60,3 +60,5 @@
 - CLI(`assetpilot`)/MCP 서버(`assetpilot-mcp`) 양쪽 진입점에 `configure_logging()` 연결
 - `toss_client._get` 재시도, `fetch_google_news` 재시도, `summarize_market_flow`의 미확정 레코드 스킵에 경고 로그 추가 — 다음에 비슷한 실패가 나면 로그만 보고 원인 파악 가능하도록
 - 실행 테스트: 정상 커맨드(`assetpilot snapshot`) 로그 기록 확인 + 강제 예외로 `excepthook` 타임스탬프 기록 확인
+- 로깅 작업 중 코드를 살펴보다 **세 번째 버그 발견**: `TossAuth._fetch_token`(토큰 발급)에는 재시도 로직이 없었음 — `TossClient._get`(데이터 조회)만 재시도가 있고, 토큰 발급 자체가 일시적 5xx/429나 네트워크 오류를 만나면 즉시 실패하는 구멍. `_get`과 동일한 재시도 정책 추가
+- `pytest`를 dev 의존성으로 도입(`pyproject.toml` `[project.optional-dependencies].dev`), `tests/`에 9개 테스트 작성: 토스 API 재시도(전송 오류/재시도 가능 상태코드/최대 재시도 초과 3종), 토큰 발급 재시도(재시도 가능 vs 즉시 실패 2종), 구글 뉴스 RSS 재시도 2종, 오늘 발견한 매매동향 null 레코드 버그의 회귀 테스트 2종. `httpx.MockTransport`(토스 API)와 `monkeypatch`(뉴스 RSS)로 실제 네트워크 없이 검증, 백오프 대기는 `time.sleep` 무력화로 스킵(`tests/conftest.py`). `TossClient`에 테스트용 `transport` 주입 파라미터 추가. 전체 9개 통과(0.16초) + 실계좌로 `assetpilot status` 재검증까지 완료

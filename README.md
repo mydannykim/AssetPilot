@@ -2,14 +2,15 @@
 
 토스증권 Open API와 Claude를 연동해 실시간 자산 관리를 돕고, AI로 주식 시장 뉴스와 트렌드를 탐지하는 프로젝트.
 
-현재 단계: **Phase 4 (뉴스 수집 & 동향 탐지) 진행 중**. AI 감성분석/요약은 의도적으로 아직 붙이지 않았고(빌링 미설정), 원문 뉴스와 매매동향 데이터는 Claude Code 세션에서 직접 읽어 해석하는 방식으로 쓴다. 자동매매 기능은 더 이후 단계로 미뤄져 있으며 아직 구현되어 있지 않다. 전체 로드맵은 [PLAN.md](PLAN.md) 참고.
+현재 단계: **Phase 4(뉴스/동향) 완료, Phase 5(실시간 인사이트 통합)·Phase 6(테스트&안정화) 진행 중**. AI 감성분석/요약은 Anthropic API를 직접 호출하지 않고, 헤드리스 `claude -p`가 데이터를 읽어 `data/ai_briefing.json`을 쓰는 방식으로 자동화되어 있다(빌링 불필요). 자동매매 기능은 더 이후 단계로 미뤄져 있으며 아직 구현되어 있지 않다. 전체 로드맵은 [PLAN.md](PLAN.md) 참고.
 
 ## 시작하기
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e .
+pip install -e .          # 실행만 할 경우
+pip install -e ".[dev]"   # 테스트도 돌릴 경우 (pytest 포함)
 ```
 
 `.env.example`을 복사해 `.env`를 만들고 값을 채운다.
@@ -142,6 +143,14 @@ src/assetpilot/
   logging_config.py # data/assetpilot.log 로깅 설정 (요청 재시도, 에러 추적)
 scripts/launchd/ # 스냅샷 자동 실행용 launchd plist + 설치 스크립트
 ```
+
+## 테스트
+
+```bash
+pytest
+```
+
+실제 네트워크 호출 없이(`httpx.MockTransport`/`monkeypatch`) 토스 API·구글 뉴스 RSS 재시도 로직과 매매동향 파싱을 검증한다. `tests/`에 있다.
 
 ## 로그
 
