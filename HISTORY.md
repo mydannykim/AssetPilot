@@ -61,6 +61,13 @@
 - `toss_client._get` 재시도, `fetch_google_news` 재시도, `summarize_market_flow`의 미확정 레코드 스킵에 경고 로그 추가 — 다음에 비슷한 실패가 나면 로그만 보고 원인 파악 가능하도록
 - 실행 테스트: 정상 커맨드(`assetpilot snapshot`) 로그 기록 확인 + 강제 예외로 `excepthook` 타임스탬프 기록 확인
 - 로깅 작업 중 코드를 살펴보다 **세 번째 버그 발견**: `TossAuth._fetch_token`(토큰 발급)에는 재시도 로직이 없었음 — `TossClient._get`(데이터 조회)만 재시도가 있고, 토큰 발급 자체가 일시적 5xx/429나 네트워크 오류를 만나면 즉시 실패하는 구멍. `_get`과 동일한 재시도 정책 추가
+### Phase 4 — 보류 항목 마무리 (유사 이슈 클러스터링, 시장영향도 세분화)
+- 사용자 질문("이건 너가 해줘야 하는 거지?")에 확인: 이 프로젝트는 처음부터 AI 판단(감성분석 등)을 알고리즘으로 짜지 않고 Claude가 직접 데이터를 읽고 해석하는 방식을 써왔음 — 클러스터링/영향도 판단도 같은 원칙 적용
+- `ai_briefing.py`: `key_points: list[str]` → `key_points: list[KeyPoint]`로 스키마 변경, `KeyPoint`에 `point`(이슈 요약)와 `impact`(high/medium/low) 필드
+- `run_briefing.sh` 프롬프트에 "같은 사안을 다루는 기사들을 하나의 이슈로 묶어서 정리 + 영향도 판단" 명시적으로 요청, 판단 기준(실적 서프라이즈·정책 발표 = high 등) 예시 추가
+- `dashboard.py`: 이슈별 영향도를 도트(●●●/●●○/●○○)로 표시, high는 굵게 강조. 기존 `--warn` 색상(집중도 경고용)과 의미가 겹치지 않도록 별도 톤(텍스트 강조)으로 구현
+- `tests/test_ai_briefing.py` 추가 — `KeyPoint` 기본값/JSON 직렬화 검증 2건, 전체 11개 테스트 통과
+- 스키마가 바뀌어서 기존 `data/ai_briefing.json`(구 스키마)은 파싱 실패 → `load_briefing()`이 `None` 반환(대시보드는 빈 상태로 정상 폴백) 확인 후, `run_briefing.sh` 재실행으로 새 스키마 브리핑 재생성해 검증
 - `pytest`를 dev 의존성으로 도입(`pyproject.toml` `[project.optional-dependencies].dev`), `tests/`에 9개 테스트 작성: 토스 API 재시도(전송 오류/재시도 가능 상태코드/최대 재시도 초과 3종), 토큰 발급 재시도(재시도 가능 vs 즉시 실패 2종), 구글 뉴스 RSS 재시도 2종, 오늘 발견한 매매동향 null 레코드 버그의 회귀 테스트 2종. `httpx.MockTransport`(토스 API)와 `monkeypatch`(뉴스 RSS)로 실제 네트워크 없이 검증, 백오프 대기는 `time.sleep` 무력화로 스킵(`tests/conftest.py`). `TossClient`에 테스트용 `transport` 주입 파라미터 추가. 전체 9개 통과(0.16초) + 실계좌로 `assetpilot status` 재검증까지 완료
 - README 정리 — 그동안 기능별로 흩어져 있던 설정 단계(env, init-db, 스냅샷 launchd, claude 로그인, 브리핑 launchd, terminal-notifier)를 "처음 한 번만 하는 설정" 체크리스트로 한 곳에 모음. **Phase 6(테스트 & 안정화) 4개 항목 전부 완료**
 

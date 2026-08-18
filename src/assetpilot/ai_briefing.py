@@ -8,6 +8,15 @@ from pydantic import BaseModel
 DEFAULT_BRIEFING_PATH = Path("data/ai_briefing.json")
 
 Sentiment = Literal["positive", "neutral", "negative"]
+Impact = Literal["high", "medium", "low"]
+
+
+class KeyPoint(BaseModel):
+    point: str
+    # 개별 뉴스 하나가 아니라, 관련된 뉴스 여러 건을 하나의 이슈로 묶은 단위다
+    # (Phase 4의 "유사 이슈 클러스터링" 보류 항목 — 별도 알고리즘 대신 브리핑
+    # 프롬프트가 Claude에게 직접 묶어서 정리하도록 요청하는 방식으로 대체).
+    impact: Impact = "medium"
 
 
 class HoldingBriefing(BaseModel):
@@ -15,7 +24,7 @@ class HoldingBriefing(BaseModel):
     name: str
     sentiment: Sentiment
     summary: str
-    key_points: list[str] = []
+    key_points: list[KeyPoint] = []
 
 
 class AIBriefing(BaseModel):

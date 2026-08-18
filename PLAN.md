@@ -55,8 +55,8 @@
 - [x] 국내 종목 매매동향/공매도/매수유의 데이터 연동 — `assetpilot trends` / MCP `get_market_flow` (외국인·기관 순매수 스트릭, 공매도 비중). 해외 종목은 토스 API 자체가 미지원
 - [x] AI 요약/감성분석 — `news_items.sentiment`/`summary` 컬럼 대신 별도 `data/ai_briefing.json` + `assetpilot dashboard`의 "AI 브리핑" 패널로 구현. AssetPilot 코드가 Anthropic API를 직접 호출하지 않고, Claude Code가 `get_news`/`get_market_flow`를 읽어 분석한 결과를 `save_briefing()`으로 저장하는 방식(빌링 불필요). 지금은 수동으로 1회 생성해 검증함
 - [x] AI 브리핑 자동 갱신 — `assetpilot prepare-briefing`(순수 데이터 수집) → 헤드리스 `claude -p`(`scripts/launchd/run_briefing.sh`)가 분석해 `ai_briefing.json` 저장, 스냅샷과 동일 스케줄(16:00/07:00)로 launchd 등록 완료. 권한은 그 실행 하나에 `--settings`로 직접 전달(`Edit(data/ai_briefing.json)`만 허용 — 파일쓰기는 `Write`가 아니라 `Edit` 규칙으로 검사됨, 비대화형 모드는 프로젝트 `.claude/settings.json`을 신뢰 절차 없이는 안 읽음). 로컬 `claude` CLI 로그인은 `claude setup-token`이 아니라 `claude auth login`으로 해결. `launchctl start com.assetpilot.briefing`으로 실제 트리거 실행까지 검증 완료
-- [ ] 유사 이슈 클러스터링으로 "트렌드" 탐지 — 보류
-- [ ] 시장영향도 판단 세분화 — 보류
+- [x] 유사 이슈 클러스터링으로 "트렌드" 탐지 — 별도 알고리즘(임베딩 유사도 등) 대신 이 프로젝트의 기존 원칙(AI 판단은 Claude가 직접, 알고리즘으로 안 짬)을 따름. 브리핑 프롬프트(`scripts/launchd/run_briefing.sh`)에 "같은 사안을 다루는 기사들을 하나의 이슈로 묶어서 정리"하도록 명시적으로 요청 — `key_points`가 개별 기사가 아니라 이슈 단위로 나오게 됨
+- [x] 시장영향도 판단 세분화 — `ai_briefing.py`의 `KeyPoint`에 `impact: high|medium|low` 필드 추가(기존엔 `key_points`가 단순 문자열 리스트였음). 프롬프트에 판단 기준 명시(실적 서프라이즈·정책 발표·대규모 수급 변화 = high, 방향성은 있지만 결정적이지 않음 = medium, 참고 수준 = low). 대시보드에 이슈별 영향도 도트(●●●/●●○/●○○) 표시 추가
 
 ## Phase 5 — 실시간 인사이트 통합
 - [x] 스케줄러로 주기적 파이프라인 실행 — 국내장 시간(09:00~15:00) 중 자동 갱신 추가. 스냅샷(토스 API만 사용, Claude 사용량과 무관)은 1시간마다(7개 엔트리, 기존 16:00/07:00 포함 총 9개 트리거). 브리핑(헤드리스 `claude -p`로 Claude Pro 사용량 소모)은 처음엔 동일하게 1시간마다로 갔다가, 사용자가 Pro 요금제 사용량 소모를 우려해 09:00/12:00/15:00(3시간 간격, 기존 포함 총 5개 트리거)로 낮춤. 요일 필터는 안 걸었음(주말엔 시세가 그대로라 장중 실행이 사실상 무해). `install.sh`/`install_briefing.sh` 재실행으로 반영, `launchctl print`로 스냅샷 9개/브리핑 5개 등록 확인

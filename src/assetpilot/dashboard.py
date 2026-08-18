@@ -78,6 +78,9 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple
 .briefing-text { font-size: 13px; color: var(--text); line-height: 1.55; margin: 0; }
 .briefing-points { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--text-muted); }
 .briefing-points li { margin-bottom: 2px; }
+.impact-dots { display: inline-block; font-size: 8px; letter-spacing: 1.5px; color: var(--text-muted); margin-right: 3px; }
+.impact-high .impact-dots { color: var(--text); }
+.impact-high { color: var(--text); font-weight: 600; }
 .briefing-empty { color: var(--text-muted); font-size: 13px; }
 .briefing-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
 .grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
@@ -158,6 +161,8 @@ def _pl_arrow(amount: float) -> str:
 _SENTIMENT_CLASS = {"positive": "gain", "neutral": "neutral", "negative": "loss"}
 _SENTIMENT_LABEL = {"positive": "긍정", "neutral": "중립", "negative": "부정"}
 _SENTIMENT_ARROW = {"positive": "▲", "neutral": "―", "negative": "▼"}
+_IMPACT_DOTS = {"high": "●●●", "medium": "●●○", "low": "●○○"}
+_IMPACT_LABEL = {"high": "영향 높음", "medium": "영향 보통", "low": "영향 낮음"}
 
 
 def _holding_briefing_card(item: HoldingBriefing) -> str:
@@ -166,7 +171,12 @@ def _holding_briefing_card(item: HoldingBriefing) -> str:
     arrow = _SENTIMENT_ARROW.get(item.sentiment, "―")
     points_html = ""
     if item.key_points:
-        points = "".join(f"<li>{p}</li>" for p in item.key_points)
+        points = "".join(
+            f'<li class="{"impact-high" if kp.impact == "high" else ""}">'
+            f'<span class="impact-dots" title="{_IMPACT_LABEL.get(kp.impact, kp.impact)}">'
+            f'{_IMPACT_DOTS.get(kp.impact, "●●○")}</span> {kp.point}</li>'
+            for kp in item.key_points
+        )
         points_html = f'<ul class="briefing-points">{points}</ul>'
     return f"""
     <div class="briefing-holding">
