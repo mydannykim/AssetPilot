@@ -2,7 +2,7 @@
 
 토스증권 Open API와 Claude를 연동해 실시간 자산 관리를 돕고, AI로 주식 시장 뉴스와 트렌드를 탐지하는 프로젝트.
 
-현재 단계: **Phase 4(뉴스/동향) 완료, Phase 5(실시간 인사이트 통합)·Phase 6(테스트&안정화) 진행 중**. AI 감성분석/요약은 Anthropic API를 직접 호출하지 않고, 헤드리스 `claude -p`가 데이터를 읽어 `data/ai_briefing.json`을 쓰는 방식으로 자동화되어 있다(빌링 불필요). 자동매매 기능은 더 이후 단계로 미뤄져 있으며 아직 구현되어 있지 않다. 전체 로드맵은 [PLAN.md](PLAN.md) 참고.
+현재 단계: **Phase 4(뉴스/동향)·Phase 6(테스트&안정화) 완료, Phase 5(실시간 인사이트 통합) 일부 진행 중**(알림 채널은 구현 완료, 장중 주기적 실행 여부는 미결정). AI 감성분석/요약은 Anthropic API를 직접 호출하지 않고, 헤드리스 `claude -p`가 데이터를 읽어 `data/ai_briefing.json`을 쓰는 방식으로 자동화되어 있다(빌링 불필요). 자동매매 기능은 더 이후 단계로 미뤄져 있으며 아직 구현되어 있지 않다. 전체 로드맵은 [PLAN.md](PLAN.md) 참고.
 
 ## 시작하기
 
@@ -22,6 +22,16 @@ cp .env.example .env
 필요한 값:
 - `TOSS_CLIENT_ID`, `TOSS_CLIENT_SECRET`: 토스증권 앱 > 설정 > Open API 메뉴에서 발급 (2026-08 기준 단계적 롤아웃 중이라 계정에 따라 아직 발급이 불가능할 수 있음)
 - `ANTHROPIC_API_KEY`: https://console.anthropic.com 에서 발급
+
+### 처음 한 번만 하는 설정 (macOS 전용 — launchd/알림 자동화가 macOS API를 쓴다)
+
+1. 위 `.env` 설정 + `assetpilot init-db`
+2. 스냅샷 자동화 등록: `scripts/launchd/install.sh` (자세한 건 [스냅샷 자동화](#스냅샷-자동화-launchd) 참고)
+3. 로컬 `claude` CLI 로그인(이 Claude Code 세션과는 별개 인증): `claude setup-token` 또는 `claude auth login`
+4. AI 브리핑 자동화 등록: `scripts/launchd/install_briefing.sh` (자세한 건 [AI 브리핑 패널](#ai-브리핑-패널) 참고)
+5. (선택) 알림 클릭 시 대시보드 자동 오픈: `brew install terminal-notifier` — 없어도 알림 자체는 뜨고, 클릭 액션만 빠진다
+
+한 번 등록해두면 이후엔 16:00/07:00에 스냅샷 → 브리핑 → 알림까지 전부 자동으로 돈다. 상태 확인은 `launchctl list | grep com.assetpilot`, 로그는 [로그](#로그) 절 참고.
 
 ## 사용법
 

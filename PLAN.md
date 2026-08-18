@@ -68,7 +68,7 @@
 - [x] 통합 테스트 (목데이터 + 실제 API 소량 검증) — `pytest`(dev 의존성) 도입, `tests/`에 9개 테스트: 토스 API 재시도(전송 오류/재시도 가능 상태코드/최대 재시도 초과), 토큰 발급 재시도(재시도 가능 vs 즉시 실패), 구글 뉴스 RSS 재시도, 매매동향 미확정 레코드 스킵(회귀 테스트). `httpx.MockTransport`/`monkeypatch`로 실제 네트워크 없이 검증
 - [x] 토큰 만료/네트워크 오류 등 예외 시나리오 테스트 — 08-18 실전에서 2건 발견 후 수정: (1) 구글 뉴스 RSS 타임아웃 → `fetch_google_news` 재시도 로직 추가 (2) 장중 당일 매매동향 레코드의 null 필드 → `summarize_market_flow`에서 미확정 레코드 스킵. 이어서 토큰 발급(`TossAuth._fetch_token`)에도 같은 재시도 로직이 빠져있던 걸 발견해 추가 — 데이터 조회 API만 재시도되고 토큰 발급 실패는 즉시 죽던 구멍이었음. 모두 자동화 테스트로 고정
 - [x] 로깅 체계 구축 — `src/assetpilot/logging_config.py`가 `data/assetpilot.log`에 타임스탬프 포함 구조화 로그를 기록(로테이션 2MB×3). CLI(`assetpilot`)와 MCP 서버(`assetpilot-mcp`) 진입점 모두에서 `configure_logging()` 호출. `sys.excepthook`으로 처리되지 않은 예외도 타임스탬프와 함께 자동 기록(08-18 오전 장애 조사 때 실행 시각을 파일 mtime으로 추측해야 했던 문제 해결). `toss_client._get`/`fetch_google_news`의 재시도마다 경고 로그, `summarize_market_flow`가 미확정 매매동향 레코드를 건너뛸 때도 경고 로그. launchd의 `*.log`/`*.error.log`(작업별 stdout/stderr)는 그대로 유지 — 이 로그는 그와 별도로 코드 내부 이벤트를 추적하는 용도
-- [ ] README 및 설정 가이드 작성
+- [x] README 및 설정 가이드 작성 — 기능별로 계속 갱신해왔던 걸 "처음 한 번만 하는 설정" 체크리스트(env → init-db → 스냅샷 launchd → claude 로그인 → 브리핑 launchd → terminal-notifier)로 한 곳에 정리
 
 ## Phase 7 — (향후 별도 진행) 자동매매 확장
 > 지금 단계에서는 설계만 메모. 실제 구현은 Phase 0~6 완료 후 사용자 요청 시 별도 기획.
