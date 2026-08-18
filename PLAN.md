@@ -30,9 +30,9 @@
 - [x] 토큰 저장 및 자동 갱신 로직 (만료 60초 전 자동 재발급)
 - [x] 계좌 잔고/보유종목 조회 API 연동 — 실API 검증 완료 (`assetpilot status`, `assetpilot holdings`)
 - [x] 국내(KRX) 시세/캔들/호가 조회 API 연동 — 실API 검증 완료 (`assetpilot price`). 미국 시세는 미검증
-- [ ] 응답 데이터 파싱 & 로컬 저장 (SQLite에 스냅샷 기록) — DB 스키마만 있고 저장 로직 미구현
-- [ ] API 에러/레이트리밋 처리 및 재시도 로직 — 현재는 기본 `raise_for_status`만 있음, 재시도/백오프 없음
-- [ ] 목데이터 기반 단위 테스트
+- [x] 응답 데이터 파싱 & 로컬 저장 (SQLite에 스냅샷 기록) — Phase 2에서 `assetpilot snapshot`으로 구현 완료 (이 항목은 방치되어 있었음)
+- [x] API 에러/레이트리밋 처리 및 재시도 로직 — 429/5xx 재시도 + 백오프 구현됨(`toss_client._get`), 08-18 토큰 발급(`_fetch_token`)에도 동일 로직 추가 완료
+- [x] 목데이터 기반 단위 테스트 — 08-18 `pytest` 도입, `httpx.MockTransport`로 재시도 경로 검증 (이 항목도 방치되어 있었음)
 
 ## Phase 2 — 자산 관리 코어 로직
 - [x] 포트폴리오 데이터 모델 설계 (Pydantic `Holding`/`PortfolioSummary`, 환율 반영 원화 환산 포함)
