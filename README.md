@@ -2,7 +2,7 @@
 
 토스증권 Open API와 Claude를 연동해 실시간 자산 관리를 돕고, AI로 주식 시장 뉴스와 트렌드를 탐지하는 프로젝트.
 
-현재 단계: **조회·분석(Phase 0~6) 전 영역 완료.** 자동매매(Phase 7)는 별도 논의 전까지 착수하지 않는다. 전체 파이프라인이 실제로 어떻게 도는지는 [PIPELINE.md](PIPELINE.md), 로드맵은 [PLAN.md](PLAN.md), 작업 히스토리는 [HISTORY.md](HISTORY.md) 참고.
+현재 단계: **조회·분석(Phase 0~6) 전 영역 완료.** 자동매매(Phase 7)는 별도 논의 전까지 착수하지 않는다. 지금은 분석 파이프라인을 역할별 멀티 에이전트로 고도화하는 Phase 8을 설계 중이다(설계는 [AGENTS.md](AGENTS.md)). 전체 파이프라인이 실제로 어떻게 도는지는 [PIPELINE.md](PIPELINE.md), 로드맵은 [PLAN.md](PLAN.md), 작업 히스토리는 [HISTORY.md](HISTORY.md) 참고.
 
 ## 시작하기
 
