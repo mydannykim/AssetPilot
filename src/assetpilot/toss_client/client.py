@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any
 
@@ -13,6 +14,8 @@ from .auth import TossAuth
 _RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 _MAX_RETRIES = 3
 _BACKOFF_BASE_SECONDS = 1.0
+
+_logger = logging.getLogger(__name__)
 
 
 class TossClient:
@@ -45,6 +48,7 @@ class TossClient:
         last_error: Exception | None = None
         for attempt in range(_MAX_RETRIES + 1):
             if attempt > 0:
+                _logger.warning("재시도 %d/%d: %s (직전 오류: %s)", attempt, _MAX_RETRIES, path, last_error)
                 time.sleep(_BACKOFF_BASE_SECONDS * (2 ** (attempt - 1)))
             try:
                 response = self._http.get(f"{self._base_url}{path}", headers=self._headers(), params=params)
@@ -56,8 +60,14 @@ class TossClient:
                     f"retryable status {response.status_code}", request=response.request, response=response
                 )
                 continue
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError:
+                _logger.error("요청 실패: %s (status=%d)", path, response.status_code)
+                raise
+            _logger.debug("요청 성공: %s", path)
             return response.json()
+        _logger.error("최대 재시도(%d회) 초과: %s", _MAX_RETRIES, path)
         assert last_error is not None
         raise last_error
 

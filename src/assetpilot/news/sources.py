@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import calendar
+import logging
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -17,6 +18,8 @@ _LOCALES = {
 
 _MAX_RETRIES = 2
 _BACKOFF_BASE_SECONDS = 1.0
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -39,6 +42,9 @@ def fetch_google_news(query: str, *, locale: str = "ko", max_items: int = 10) ->
     response = None
     for attempt in range(_MAX_RETRIES + 1):
         if attempt > 0:
+            _logger.warning(
+                "재시도 %d/%d: 구글 뉴스 RSS query=%r (직전 오류: %s)", attempt, _MAX_RETRIES, query, last_error
+            )
             time.sleep(_BACKOFF_BASE_SECONDS * (2 ** (attempt - 1)))
         try:
             response = httpx.get(
@@ -54,6 +60,7 @@ def fetch_google_news(query: str, *, locale: str = "ko", max_items: int = 10) ->
             response = None
             continue
     if response is None:
+        _logger.error("최대 재시도(%d회) 초과: 구글 뉴스 RSS query=%r", _MAX_RETRIES, query)
         assert last_error is not None
         raise last_error
 

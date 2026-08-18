@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import webbrowser
 
 import click
@@ -13,12 +14,15 @@ from .ai_briefing import load_briefing
 from .briefing_input import build_briefing_input, save_briefing_input
 from .config import load_settings
 from .dashboard import write_dashboard
+from .logging_config import configure_logging
 from .news.collector import MARKET_NEWS_SYMBOL, collect_market_news, collect_news_for_holdings
 from .notify import send_briefing_notification
 from .storage.db import init_db
 from .storage.news import list_news
 from .storage.portfolio import save_holdings_snapshot
 from .toss_client.client import TossClient
+
+_logger = logging.getLogger(__name__)
 
 
 def _resolve_account_seq(client: TossClient, account_seq: str | None) -> str:
@@ -31,6 +35,7 @@ def _resolve_account_seq(client: TossClient, account_seq: str | None) -> str:
 @click.group()
 def main() -> None:
     """AssetPilot: 토스증권 + Claude 연동 자산관리 CLI"""
+    configure_logging()
 
 
 @main.command("init-db")
@@ -90,6 +95,7 @@ def snapshot_cmd(account_seq: str | None) -> None:
         resolved_seq, holdings, fx_rates = _fetch_holdings_and_fx(client, account_seq)
         saved = save_holdings_snapshot(settings.db_path, resolved_seq, holdings, fx_rates)
         click.echo(f"스냅샷 저장 완료: {saved}건 (계좌 {resolved_seq})")
+        _logger.info("스냅샷 저장 완료: %d건 (계좌 %s)", saved, resolved_seq)
 
 
 @main.command("allocation")
@@ -246,6 +252,7 @@ def prepare_briefing_cmd(account_seq: str | None, max_news: int) -> None:
 
     path = save_briefing_input(data, settings.db_path.parent / "briefing_input.json")
     click.echo(f"브리핑 입력 데이터 저장 완료: {path.resolve()} ({len(data.holdings)}개 종목)")
+    _logger.info("브리핑 입력 데이터 저장 완료: %s (%d개 종목)", path, len(data.holdings))
 
 
 @main.command("notify-briefing")
@@ -255,9 +262,11 @@ def notify_briefing_cmd() -> None:
     briefing = load_briefing(settings.db_path.parent / "ai_briefing.json")
     if briefing is None:
         click.echo("data/ai_briefing.json이 없거나 형식이 깨져 있어 알림을 보낼 수 없습니다.")
+        _logger.warning("ai_briefing.json 없음/파싱 실패로 알림 스킵")
         return
     send_briefing_notification(briefing, dashboard_path=settings.db_path.parent / "dashboard.html")
     click.echo("알림을 보냈습니다.")
+    _logger.info("브리핑 알림 발송 완료 (generated_at=%s)", briefing.generated_at)
 
 
 @main.command("price")

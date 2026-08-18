@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
 
 from pydantic import BaseModel
 
 # 투자자별 매매동향/공매도/매수유의 등은 국내(KR) 종목 전용 엔드포인트다 (실API로 확인, VOO 등 해외 종목은 unsupported-market 오류).
+
+_logger = logging.getLogger(__name__)
 
 
 class InvestorFlowDay(BaseModel):
@@ -54,6 +57,10 @@ def summarize_market_flow(
     감성 판단(좋다/나쁘다)은 하지 않는다 — 숫자 요약만 제공하고, 해석은 대화형으로 Claude가 한다.
     """
     records = investor_trading_response.get("result", {}).get("records", [])[:days]
+    incomplete_dates = [r["date"] for r in records if not (r.get("individual") and r.get("foreigner") and r.get("institution"))]
+    if incomplete_dates:
+        _logger.warning("%s: 미확정 매매동향 레코드 건너뜀 (날짜: %s)", symbol, ", ".join(incomplete_dates))
+
     flow_days = [
         InvestorFlowDay(
             date=r["date"],

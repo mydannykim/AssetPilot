@@ -8,6 +8,7 @@ from ..analysis.market_flow import summarize_market_flow
 from ..analysis.models import parse_holdings
 from ..analysis.report import generate_report
 from ..config import load_settings
+from ..logging_config import configure_logging
 from ..news.collector import MARKET_NEWS_SYMBOL, collect_market_news, collect_news_for_holdings
 from ..storage.news import list_news
 from ..toss_client.client import TossClient
@@ -112,6 +113,7 @@ def get_news(symbol: str | None = None, limit: int = 20) -> list[dict]:
 
 
 def main() -> None:
+    configure_logging()
     mcp.run()
 
 

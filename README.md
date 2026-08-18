@@ -138,8 +138,14 @@ src/assetpilot/
   config.py      # 환경변수 로딩
   dashboard.py   # 로컬 HTML 대시보드 렌더링
   ai_briefing.py # AI 브리핑 파일(data/ai_briefing.json) 스키마/로더
+  notify.py      # macOS 알림 발송 (클릭 시 대시보드 오픈)
+  logging_config.py # data/assetpilot.log 로깅 설정 (요청 재시도, 에러 추적)
 scripts/launchd/ # 스냅샷 자동 실행용 launchd plist + 설치 스크립트
 ```
+
+## 로그
+
+`assetpilot`/`assetpilot-mcp` 실행 시 `data/assetpilot.log`에 타임스탬프 포함 로그가 쌓인다(2MB 넘으면 최대 3개까지 로테이션). API 요청 재시도, 뉴스 수집 재시도, 처리되지 않은 예외가 여기 기록된다. launchd가 남기는 `data/snapshot.log`/`data/briefing.log`(각 작업의 stdout/stderr 그대로)와는 별개다 — 언제 무슨 일이 있었는지 시간순으로 추적하려면 `data/assetpilot.log`를 먼저 본다.
 
 ## 주의
 

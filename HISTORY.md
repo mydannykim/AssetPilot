@@ -54,3 +54,9 @@
 - `src/assetpilot/news/sources.py`의 `fetch_google_news`에 재시도(최대 2회, 지수 백오프) 추가 — `toss_client._get`과 동일한 패턴. 실호출로 정상 동작 확인. (Phase 6에서 예정했던 "예외 시나리오 처리"를 하나 앞당겨 처리함)
 - 07:00 실행 실패 후 `launchctl start com.assetpilot.briefing`으로 수동 백필 시도 중 **두 번째 버그 발견**: 장중(당일, 아직 미확정)에는 투자자별 매매동향 레코드의 individual/foreigner/institution 필드가 `null`로 오는 경우가 있는데, `summarize_market_flow`가 항상 dict라고 가정해 `TypeError: 'NoneType' object is not subscriptable`로 크래시. 미확정 레코드는 건너뛰도록 수정(`src/assetpilot/analysis/market_flow.py`) — 재실행으로 정상 동작 확인, 11:45 기준 브리핑 백필 완료
 - launchd `StartCalendarInterval`은 실패한 실행을 자동 재시도하지 않음(정해진 시각에만 트리거) — 이번처럼 실패 시 수동 복구는 `launchctl start com.assetpilot.<label>`로 즉시 트리거 가능
+
+### Phase 6 — 테스트 & 안정화 (진행 중)
+- **로깅 체계 구축**: 오전 장애 조사 때 로그에 타임스탬프가 없어서 `stat`으로 파일 mtime을 보고 실행 시각을 추측해야 했던 게 계기. `src/assetpilot/logging_config.py` 추가 — `data/assetpilot.log`에 로테이션(2MB×3) 파일 핸들러로 타임스탬프 포함 로그 기록, `sys.excepthook`으로 처리되지 않은 예외도 자동 기록
+- CLI(`assetpilot`)/MCP 서버(`assetpilot-mcp`) 양쪽 진입점에 `configure_logging()` 연결
+- `toss_client._get` 재시도, `fetch_google_news` 재시도, `summarize_market_flow`의 미확정 레코드 스킵에 경고 로그 추가 — 다음에 비슷한 실패가 나면 로그만 보고 원인 파악 가능하도록
+- 실행 테스트: 정상 커맨드(`assetpilot snapshot`) 로그 기록 확인 + 강제 예외로 `excepthook` 타임스탬프 기록 확인
