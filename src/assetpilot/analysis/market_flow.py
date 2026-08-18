@@ -62,6 +62,8 @@ def summarize_market_flow(
             institution_net=float(r["institution"]["netBuyVolume"]),
         )
         for r in records
+        # 장중(당일)에는 아직 확정 안 된 투자자 구분 데이터가 null로 오는 경우가 있어(실API로 확인) 건너뛴다.
+        if r.get("individual") and r.get("foreigner") and r.get("institution")
     ]
 
     short_records = short_selling_response.get("result", {}).get("records", [])
