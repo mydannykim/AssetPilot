@@ -67,4 +67,5 @@
 ### Phase 5 — 장중 주기적 실행 (완료)
 - 범위/주기 결정: 스냅샷+브리핑 전체를 국내장 시간(09:00~15:00) 1시간마다 추가 실행 (사용자 선택 — 비용 트레이드오프 설명 후 "스냅샷+브리핑 전체"/"1시간마다" 선택받음)
 - `com.assetpilot.snapshot.plist`/`com.assetpilot.briefing.plist`의 `StartCalendarInterval`에 09~15시 엔트리 7개씩 추가 (기존 16:00/07:00과 합쳐 9개 트리거). 처음엔 요일(Weekday 1-5)까지 제한하려다 plist가 35개 엔트리로 불어나서, 기존 16:00/07:00 항목처럼 요일 필터 없이 심플하게 유지하는 쪽으로 되돌림(주말 장중 실행은 시세가 그대로라 사실상 무해)
-- `plutil -lint`로 plist 문법 검증 후 `install.sh`/`install_briefing.sh` 재실행으로 launchd에 반영, `launchctl print`로 calendarinterval 9개 등록 확인. **Phase 5 실질적으로 완료** (남은 건 `assetpilot brief` 같은 통합 CLI 명령 여부뿐, 보류 중)
+- `plutil -lint`로 plist 문법 검증 후 `install.sh`/`install_briefing.sh` 재실행으로 launchd에 반영, `launchctl print`로 calendarinterval 9개 등록 확인
+- 사용자 질문(맥북 꺼짐/와이파이 없을 때 자동 복구되는지, 빈도가 높으면 Claude Pro 사용량이 빨리 닳는지)에 답하며 재조정: (1) launchd `StartCalendarInterval`은 놓친 실행을 나중에 몰아서 재실행해주지 않음(깨어난 뒤엔 별도 조치 없이 다음 예정 시각부터 정상 작동) — 알려주기만 하고 로직 변경은 안 함 (2) 스냅샷(토스 API만 사용)은 Claude 사용량과 무관하니 1시간마다 유지, 브리핑(헤드리스 `claude -p`, Claude Pro 사용량 소모)만 09:00/12:00/15:00(3시간 간격, 기존 포함 총 5개 트리거)로 낮춤. `com.assetpilot.briefing.plist` 재수정 후 재등록, `launchctl print`로 5개 확인. **Phase 5 실질적으로 완료** (남은 건 `assetpilot brief` 같은 통합 CLI 명령 여부뿐, 보류 중)

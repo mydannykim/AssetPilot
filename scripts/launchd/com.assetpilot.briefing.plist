@@ -24,7 +24,9 @@
             <key>Minute</key>
             <integer>0</integer>
         </dict>
-        <!-- 국내장 시간(09:00~15:30) 중 1시간마다 장중 갱신 (스냅샷과 동일 주기) -->
+        <!-- 국내장 시간(09:00~15:30) 중 3시간 간격으로 장중 갱신. 스냅샷(토스 API만 사용,
+             Claude 사용량과 무관)은 1시간마다 그대로 돌지만, 여긴 헤드리스 claude -p로
+             Claude Pro 사용량을 쓰기 때문에 빈도를 낮게 유지한다. -->
         <dict>
             <key>Hour</key>
             <integer>9</integer>
@@ -33,31 +35,7 @@
         </dict>
         <dict>
             <key>Hour</key>
-            <integer>10</integer>
-            <key>Minute</key>
-            <integer>0</integer>
-        </dict>
-        <dict>
-            <key>Hour</key>
-            <integer>11</integer>
-            <key>Minute</key>
-            <integer>0</integer>
-        </dict>
-        <dict>
-            <key>Hour</key>
             <integer>12</integer>
-            <key>Minute</key>
-            <integer>0</integer>
-        </dict>
-        <dict>
-            <key>Hour</key>
-            <integer>13</integer>
-            <key>Minute</key>
-            <integer>0</integer>
-        </dict>
-        <dict>
-            <key>Hour</key>
-            <integer>14</integer>
             <key>Minute</key>
             <integer>0</integer>
         </dict>

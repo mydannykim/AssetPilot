@@ -59,7 +59,7 @@
 - [ ] 시장영향도 판단 세분화 — 보류
 
 ## Phase 5 — 실시간 인사이트 통합
-- [x] 스케줄러로 주기적 파이프라인 실행 — 국내장 시간(09:00~15:00) 1시간마다 스냅샷+브리핑 전체 파이프라인 추가 실행하도록 결정. `com.assetpilot.snapshot.plist`/`com.assetpilot.briefing.plist`의 `StartCalendarInterval`에 09~15시 엔트리 7개씩 추가(기존 16:00/07:00 유지, 총 9개 트리거). 요일 필터는 안 걸었음(주말엔 시세가 그대로라 장중 실행이 사실상 무해). `install.sh`/`install_briefing.sh` 재실행으로 반영 완료, `launchctl print`로 calendarinterval 9개 등록 확인
+- [x] 스케줄러로 주기적 파이프라인 실행 — 국내장 시간(09:00~15:00) 중 자동 갱신 추가. 스냅샷(토스 API만 사용, Claude 사용량과 무관)은 1시간마다(7개 엔트리, 기존 16:00/07:00 포함 총 9개 트리거). 브리핑(헤드리스 `claude -p`로 Claude Pro 사용량 소모)은 처음엔 동일하게 1시간마다로 갔다가, 사용자가 Pro 요금제 사용량 소모를 우려해 09:00/12:00/15:00(3시간 간격, 기존 포함 총 5개 트리거)로 낮춤. 요일 필터는 안 걸었음(주말엔 시세가 그대로라 장중 실행이 사실상 무해). `install.sh`/`install_briefing.sh` 재실행으로 반영, `launchctl print`로 스냅샷 9개/브리핑 5개 등록 확인
 - [x] 알림 채널 결정 및 구현 — macOS 알림센터로 결정. `assetpilot notify-briefing`이 `data/ai_briefing.json`의 `overall_summary`를 알림으로 띄움. 클릭 시 `data/dashboard.html`이 열리도록 `terminal-notifier`(Homebrew) 설치 및 연동 완료 — 미설치 환경에서는 클릭 액션 없는 `osascript display notification`으로 자동 폴백. `scripts/launchd/run_briefing.sh`가 헤드리스 `claude -p` 분석 → `assetpilot dashboard --no-open`(대시보드 최신화) → `assetpilot notify-briefing` 순으로 자동 호출하므로 16:00/07:00 갱신 시마다 최신 대시보드로 연결되는 알림이 뜬다
 - [x] "오늘의 자산 요약 + 관련 뉴스 브리핑" 생성 — Phase 4에서 이미 구현됨(`data/ai_briefing.json`, 헤드리스 `claude -p` 방식). Claude API 직접 호출이 아니라 Claude Code 세션 자체를 쓰는 방식으로 대체 완료(빌링 불필요)
 - [ ] CLI 명령어 설계 (`assetpilot status`, `assetpilot news`, `assetpilot brief` 등) — 개별 명령은 이미 있음(`status`/`news`/`notify-briefing` 등), `brief` 통합 명령 여부는 보류

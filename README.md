@@ -61,7 +61,9 @@ assetpilot notify-briefing  # data/ai_briefing.json의 총평을 macOS 알림센
 - **07:00** — 미국 장 마감 이후 (서머타임 여부와 무관하게 커버되도록 여유를 둠)
 - **09:00~15:00, 1시간마다** — 국내장 중 실시간 반영 (요일 필터 없음, 주말엔 시세가 그대로라 무해)
 
-AI 브리핑(`com.assetpilot.briefing`)도 동일 스케줄로 같이 갱신된다.
+스냅샷은 토스 API만 호출해서 Claude 사용량과 무관하다. AI 브리핑(`com.assetpilot.briefing`, 헤드리스 `claude -p` 사용)은 Claude Pro 사용량을 아끼기 위해 장중엔 더 뜨문뜨문(09:00/12:00/15:00, 3시간 간격) 갱신한다 — 기존 16:00/07:00과 합쳐 하루 5회.
+
+맥북이 잠들어 있거나(뚜껑 닫힘) 꺼져 있으면 그 시간대 트리거는 그냥 스킵된다 — launchd가 나중에 몰아서 실행해주지 않는다. 깨어난 뒤엔 별도 조치 없이 다음 예정 시각부터 정상 작동한다.
 
 ```bash
 scripts/launchd/install.sh   # 등록/재등록
@@ -87,7 +89,7 @@ assetpilot dashboard --no-open   # 파일만 생성 (열지 않음)
 
 #### 자동 갱신 (launchd + 헤드리스 Claude)
 
-브리핑을 스냅샷과 같은 스케줄(16:00, 07:00 + 국내장 중 09:00~15:00 1시간마다)로 자동으로 새로 만들도록 구성되어 있다. 두 단계로 나뉜다:
+브리핑을 16:00, 07:00 + 국내장 중 09:00/12:00/15:00(3시간 간격)에 자동으로 새로 만들도록 구성되어 있다(스냅샷보다 뜨문뜨문 — Claude Pro 사용량 절약). 두 단계로 나뉜다:
 
 1. `assetpilot prepare-briefing` — 뉴스 수집 + 매매동향 조회를 실행해 `data/briefing_input.json`을 만든다 (순수 데이터 수집, AI 판단 없음)
 2. 헤드리스 `claude -p`가 그 파일을 읽고 분석해 `data/ai_briefing.json`을 쓴다
