@@ -63,3 +63,8 @@
 - 로깅 작업 중 코드를 살펴보다 **세 번째 버그 발견**: `TossAuth._fetch_token`(토큰 발급)에는 재시도 로직이 없었음 — `TossClient._get`(데이터 조회)만 재시도가 있고, 토큰 발급 자체가 일시적 5xx/429나 네트워크 오류를 만나면 즉시 실패하는 구멍. `_get`과 동일한 재시도 정책 추가
 - `pytest`를 dev 의존성으로 도입(`pyproject.toml` `[project.optional-dependencies].dev`), `tests/`에 9개 테스트 작성: 토스 API 재시도(전송 오류/재시도 가능 상태코드/최대 재시도 초과 3종), 토큰 발급 재시도(재시도 가능 vs 즉시 실패 2종), 구글 뉴스 RSS 재시도 2종, 오늘 발견한 매매동향 null 레코드 버그의 회귀 테스트 2종. `httpx.MockTransport`(토스 API)와 `monkeypatch`(뉴스 RSS)로 실제 네트워크 없이 검증, 백오프 대기는 `time.sleep` 무력화로 스킵(`tests/conftest.py`). `TossClient`에 테스트용 `transport` 주입 파라미터 추가. 전체 9개 통과(0.16초) + 실계좌로 `assetpilot status` 재검증까지 완료
 - README 정리 — 그동안 기능별로 흩어져 있던 설정 단계(env, init-db, 스냅샷 launchd, claude 로그인, 브리핑 launchd, terminal-notifier)를 "처음 한 번만 하는 설정" 체크리스트로 한 곳에 모음. **Phase 6(테스트 & 안정화) 4개 항목 전부 완료**
+
+### Phase 5 — 장중 주기적 실행 (완료)
+- 범위/주기 결정: 스냅샷+브리핑 전체를 국내장 시간(09:00~15:00) 1시간마다 추가 실행 (사용자 선택 — 비용 트레이드오프 설명 후 "스냅샷+브리핑 전체"/"1시간마다" 선택받음)
+- `com.assetpilot.snapshot.plist`/`com.assetpilot.briefing.plist`의 `StartCalendarInterval`에 09~15시 엔트리 7개씩 추가 (기존 16:00/07:00과 합쳐 9개 트리거). 처음엔 요일(Weekday 1-5)까지 제한하려다 plist가 35개 엔트리로 불어나서, 기존 16:00/07:00 항목처럼 요일 필터 없이 심플하게 유지하는 쪽으로 되돌림(주말 장중 실행은 시세가 그대로라 사실상 무해)
+- `plutil -lint`로 plist 문법 검증 후 `install.sh`/`install_briefing.sh` 재실행으로 launchd에 반영, `launchctl print`로 calendarinterval 9개 등록 확인. **Phase 5 실질적으로 완료** (남은 건 `assetpilot brief` 같은 통합 CLI 명령 여부뿐, 보류 중)

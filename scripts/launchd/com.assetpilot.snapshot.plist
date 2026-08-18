@@ -25,6 +25,50 @@
             <key>Minute</key>
             <integer>0</integer>
         </dict>
+        <!-- 국내장 시간(09:00~15:30) 중 1시간마다 장중 갱신. 요일 필터는 안 걸었다 —
+             주말엔 시세가 그대로라 장중 실행 자체가 사실상 아무 변화 없이 끝난다. -->
+        <dict>
+            <key>Hour</key>
+            <integer>9</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>10</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>11</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>12</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>13</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>14</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>15</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
     </array>
     <key>StandardOutPath</key>
     <string>/Users/kimseonghyun/AssetPilot/data/snapshot.log</string>

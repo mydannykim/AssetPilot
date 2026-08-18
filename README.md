@@ -2,7 +2,7 @@
 
 토스증권 Open API와 Claude를 연동해 실시간 자산 관리를 돕고, AI로 주식 시장 뉴스와 트렌드를 탐지하는 프로젝트.
 
-현재 단계: **Phase 4(뉴스/동향)·Phase 6(테스트&안정화) 완료, Phase 5(실시간 인사이트 통합) 일부 진행 중**(알림 채널은 구현 완료, 장중 주기적 실행 여부는 미결정). AI 감성분석/요약은 Anthropic API를 직접 호출하지 않고, 헤드리스 `claude -p`가 데이터를 읽어 `data/ai_briefing.json`을 쓰는 방식으로 자동화되어 있다(빌링 불필요). 자동매매 기능은 더 이후 단계로 미뤄져 있으며 아직 구현되어 있지 않다. 전체 로드맵은 [PLAN.md](PLAN.md) 참고.
+현재 단계: **Phase 4(뉴스/동향)·Phase 6(테스트&안정화) 완료, Phase 5(실시간 인사이트 통합) 거의 완료**(알림 채널·장중 주기 실행 구현 완료, 통합 CLI 명령(`brief`) 여부만 보류). AI 감성분석/요약은 Anthropic API를 직접 호출하지 않고, 헤드리스 `claude -p`가 데이터를 읽어 `data/ai_briefing.json`을 쓰는 방식으로 자동화되어 있다(빌링 불필요). 자동매매 기능은 더 이후 단계로 미뤄져 있으며 아직 구현되어 있지 않다. 전체 로드맵은 [PLAN.md](PLAN.md) 참고.
 
 ## 시작하기
 
@@ -56,11 +56,12 @@ assetpilot notify-briefing  # data/ai_briefing.json의 총평을 macOS 알림센
 
 ## 스냅샷 자동화 (launchd)
 
-`assetpilot snapshot`을 하루 두 번 자동 실행하도록 등록되어 있다 (macOS launchd 사용):
+`assetpilot snapshot`을 자동 실행하도록 등록되어 있다 (macOS launchd 사용):
 - **16:00** — 국내(KRX) 장 마감(15:30) 후 30분 뒤
 - **07:00** — 미국 장 마감 이후 (서머타임 여부와 무관하게 커버되도록 여유를 둠)
+- **09:00~15:00, 1시간마다** — 국내장 중 실시간 반영 (요일 필터 없음, 주말엔 시세가 그대로라 무해)
 
-장중 실시간 반영(시간 단위 등)은 지금 단계에선 하지 않고 추후 필요할 때 고려한다.
+AI 브리핑(`com.assetpilot.briefing`)도 동일 스케줄로 같이 갱신된다.
 
 ```bash
 scripts/launchd/install.sh   # 등록/재등록
@@ -86,7 +87,7 @@ assetpilot dashboard --no-open   # 파일만 생성 (열지 않음)
 
 #### 자동 갱신 (launchd + 헤드리스 Claude)
 
-브리핑을 스냅샷과 같은 시각(16:00, 07:00)에 자동으로 새로 만들도록 구성되어 있다. 두 단계로 나뉜다:
+브리핑을 스냅샷과 같은 스케줄(16:00, 07:00 + 국내장 중 09:00~15:00 1시간마다)로 자동으로 새로 만들도록 구성되어 있다. 두 단계로 나뉜다:
 
 1. `assetpilot prepare-briefing` — 뉴스 수집 + 매매동향 조회를 실행해 `data/briefing_input.json`을 만든다 (순수 데이터 수집, AI 판단 없음)
 2. 헤드리스 `claude -p`가 그 파일을 읽고 분석해 `data/ai_briefing.json`을 쓴다

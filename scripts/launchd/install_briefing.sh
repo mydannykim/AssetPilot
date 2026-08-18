@@ -1,5 +1,6 @@
 #!/bin/bash
-# AI 브리핑(뉴스+매매동향 분석)을 스냅샷과 동일한 시각(16:00, 07:00)에 자동 갱신하도록 launchd에 등록한다.
+# AI 브리핑(뉴스+매매동향 분석)을 스냅샷과 동일한 스케줄(16:00/07:00 + 국내장 중
+# 09:00~15:00 1시간마다)로 자동 갱신하도록 launchd에 등록한다.
 set -euo pipefail
 
 PLIST_NAME="com.assetpilot.briefing.plist"

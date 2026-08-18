@@ -1,5 +1,6 @@
 #!/bin/bash
-# assetpilot snapshot을 매일 18:00에 자동 실행하도록 launchd에 등록한다.
+# assetpilot snapshot을 하루 2회(16:00/07:00) + 국내장 중(09:00~15:00, 1시간마다)
+# 자동 실행하도록 launchd에 등록한다. 스케줄은 com.assetpilot.snapshot.plist 참고.
 set -euo pipefail
 
 PLIST_NAME="com.assetpilot.snapshot.plist"
