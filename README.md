@@ -36,6 +36,7 @@ assetpilot dashboard   # 최신 데이터로 로컬 HTML 대시보드 생성 후
 assetpilot trends 005935   # 국내 종목 투자자별 매매동향/공매도/매수유의 요약 (국내 종목 전용)
 assetpilot news        # 보유 종목별 뉴스 + 일반 시황 뉴스, 2축으로 구글 뉴스에서 수집해 DB에 저장 (원문만 저장, AI 분석 없음)
 assetpilot news-list    # 저장된 뉴스 목록 출력 (--symbol MARKET 이면 시황 뉴스만)
+assetpilot notify-briefing  # data/ai_briefing.json의 총평을 macOS 알림센터로 띄움
 ```
 
 뉴스는 두 축으로 수집한다: (1) 보유 종목별 뉴스, (2) 종목과 무관한 일반 시황(코스피/코스닥/증시/금리) 뉴스 — `news_items.related_symbols = 'MARKET'`로 구분 저장된다. 소스는 구글 뉴스 RSS(무료, 키 불필요)이며, 네이버 뉴스 API 추가는 보류 상태다(사용 시 네이버 개발자센터에서 Client ID/Secret 발급 필요).
@@ -98,6 +99,8 @@ launchctl start com.assetpilot.briefing          # 수동으로 1회 실행해�
 ```
 
 로그 확인: `data/briefing.log` / `data/briefing.error.log`.
+
+브리핑이 갱신될 때마다(자동 실행 포함) `assetpilot notify-briefing`이 총평을 macOS 알림으로 띄운다(`src/assetpilot/notify.py`). 클릭하면 `data/dashboard.html`이 바로 열린다 — `terminal-notifier`(Homebrew, `brew install terminal-notifier`)가 설치되어 있으면 `-open` 옵션으로 연결하고, 없으면 클릭 액션이 없는 기본 `osascript display notification`으로 자동 대체한다. `run_briefing.sh`가 `claude -p` 분석 직후 `assetpilot dashboard --no-open`으로 대시보드를 최신 상태로 재생성한 뒤 알림을 보내므로, 클릭해서 열리는 화면은 항상 그 시점의 최신 브리핑을 반영한다.
 
 ## MCP 서버 (Claude Code/Desktop 연동)
 

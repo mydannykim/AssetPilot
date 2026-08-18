@@ -49,3 +49,7 @@ EOF
 SCOPED_SETTINGS='{"permissions":{"allow":["Edit(data/ai_briefing.json)","Edit(//Users/kimseonghyun/AssetPilot/data/ai_briefing.json)"]}}'
 
 claude -p "$PROMPT" --output-format text --permission-mode dontAsk --settings "$SCOPED_SETTINGS"
+
+# 알림 클릭 시 열리는 대시보드가 방금 생성된 브리핑을 반영하도록 미리 재생성해둔다.
+assetpilot dashboard --no-open
+assetpilot notify-briefing

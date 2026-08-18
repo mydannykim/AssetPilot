@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import calendar
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -13,6 +14,9 @@ _LOCALES = {
     "ko": {"hl": "ko", "gl": "KR", "ceid": "KR:ko"},
     "en": {"hl": "en-US", "gl": "US", "ceid": "US:en"},
 }
+
+_MAX_RETRIES = 2
+_BACKOFF_BASE_SECONDS = 1.0
 
 
 @dataclass
@@ -30,13 +34,29 @@ def fetch_google_news(query: str, *, locale: str = "ko", max_items: int = 10) ->
     httpx로 먼저 받아온 뒤 feedparser로 파싱한다.
     """
     params = {"q": query, **_LOCALES.get(locale, _LOCALES["ko"])}
-    response = httpx.get(
-        "https://news.google.com/rss/search",
-        params=params,
-        headers={"User-Agent": _USER_AGENT},
-        timeout=10.0,
-    )
-    response.raise_for_status()
+
+    last_error: Exception | None = None
+    response = None
+    for attempt in range(_MAX_RETRIES + 1):
+        if attempt > 0:
+            time.sleep(_BACKOFF_BASE_SECONDS * (2 ** (attempt - 1)))
+        try:
+            response = httpx.get(
+                "https://news.google.com/rss/search",
+                params=params,
+                headers={"User-Agent": _USER_AGENT},
+                timeout=10.0,
+            )
+            response.raise_for_status()
+            break
+        except (httpx.TransportError, httpx.HTTPStatusError) as exc:
+            last_error = exc
+            response = None
+            continue
+    if response is None:
+        assert last_error is not None
+        raise last_error
+
     feed = feedparser.parse(response.text)
 
     articles = []

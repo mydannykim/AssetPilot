@@ -41,3 +41,14 @@
   - 파일쓰기 권한 규칙은 `Write(path)`가 아니라 `Edit(path)`로 검사됨을 확인
   - 비대화형(`-p`) 모드에서는 프로젝트 `.claude/settings.json`이 워크스페이스 신뢰 절차 때문에 적용되지 않음 → `--permission-mode dontAsk --settings '{...}'`로 그 실행 하나에만 직접 권한(`Edit(data/ai_briefing.json)`)을 넘기는 방식으로 해결
   - 사용자의 실제 터미널에서 수동 실행 검증 완료 + `launchctl start com.assetpilot.briefing`으로 launchd 트리거 실행까지 검증 완료 (정상적으로 `data/ai_briefing.json` 갱신됨). **Phase 4 AI 브리핑 자동화 파이프라인 전체 완료**
+- 자동화 파이프라인 안정성 1차 점검 — launchd 등록 후 `snapshot.log` 3회 성공, `briefing.log` 1회 성공(둘 다 에러 로그 없음, `launchctl list` 종료코드 0) 확인
+
+### Phase 5 — 실시간 인사이트 통합 (진행 중)
+- 알림 채널을 macOS 알림센터로 결정 (터미널 로그/이메일 대안 중 선택)
+- `src/assetpilot/notify.py` 추가 — `osascript display notification`으로 `ai_briefing.json`의 `overall_summary`를 알림으로 띄움. AppleScript 문자열 이스케이프 처리
+- `assetpilot notify-briefing` CLI 명령 추가, `scripts/launchd/run_briefing.sh`가 헤드리스 `claude -p` 분석 직후 자동 호출하도록 연결 — 16:00/07:00 브리핑 자동 갱신 시마다 알림이 뜨도록 구성 완료
+- 사용자가 클릭 시 대시보드 오픈을 요청 — `terminal-notifier`(Homebrew, MIT 라이선스) 설치 확인 후 진행. `notify.py`가 `shutil.which`로 설치 여부를 감지해 있으면 `-open <dashboard.html file:// URI>`로 클릭 액션을 연결하고, 없으면 기존 `osascript display notification`으로 자동 폴백하도록 구현
+- `run_briefing.sh`에 `assetpilot dashboard --no-open` 단계를 추가해 알림 발송 전 대시보드를 항상 최신 상태로 재생성 — 클릭해서 열리는 화면이 그 시점 최신 브리핑을 반영하도록 보장
+- 사용자 실환경에서 알림 발송 + 클릭 시 대시보드 오픈까지 최종 확인 완료. **알림 채널 항목 완료**
+- 다음날(08-18) 아침 07:00 자동 실행 점검 중 발견: 스냅샷은 성공했으나 브리핑은 실패(`launchctl` 종료코드 1) — `collect_market_news`가 구글 뉴스 RSS 호출 중 `httpx.ReadTimeout`으로 실패해 그날 브리핑 전체가 스킵됨. 재시도 로직이 없던 게 원인
+- `src/assetpilot/news/sources.py`의 `fetch_google_news`에 재시도(최대 2회, 지수 백오프) 추가 — `toss_client._get`과 동일한 패턴. 실호출로 정상 동작 확인. (Phase 6에서 예정했던 "예외 시나리오 처리"를 하나 앞당겨 처리함)

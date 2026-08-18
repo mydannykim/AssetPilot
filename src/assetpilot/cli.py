@@ -9,10 +9,12 @@ from .analysis.fx import fetch_fx_rates_to_krw
 from .analysis.market_flow import summarize_market_flow
 from .analysis.models import parse_holdings
 from .analysis.report import generate_report
+from .ai_briefing import load_briefing
 from .briefing_input import build_briefing_input, save_briefing_input
 from .config import load_settings
 from .dashboard import write_dashboard
 from .news.collector import MARKET_NEWS_SYMBOL, collect_market_news, collect_news_for_holdings
+from .notify import send_briefing_notification
 from .storage.db import init_db
 from .storage.news import list_news
 from .storage.portfolio import save_holdings_snapshot
@@ -244,6 +246,18 @@ def prepare_briefing_cmd(account_seq: str | None, max_news: int) -> None:
 
     path = save_briefing_input(data, settings.db_path.parent / "briefing_input.json")
     click.echo(f"브리핑 입력 데이터 저장 완료: {path.resolve()} ({len(data.holdings)}개 종목)")
+
+
+@main.command("notify-briefing")
+def notify_briefing_cmd() -> None:
+    """저장된 data/ai_briefing.json의 총평을 macOS 알림센터로 띄운다."""
+    settings = load_settings()
+    briefing = load_briefing(settings.db_path.parent / "ai_briefing.json")
+    if briefing is None:
+        click.echo("data/ai_briefing.json이 없거나 형식이 깨져 있어 알림을 보낼 수 없습니다.")
+        return
+    send_briefing_notification(briefing, dashboard_path=settings.db_path.parent / "dashboard.html")
+    click.echo("알림을 보냈습니다.")
 
 
 @main.command("price")

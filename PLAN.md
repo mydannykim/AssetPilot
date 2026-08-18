@@ -60,13 +60,13 @@
 
 ## Phase 5 — 실시간 인사이트 통합
 - [ ] 스케줄러로 주기적 파이프라인 실행 (장중 주기 결정)
-- [ ] 알림 채널 결정 및 구현 (터미널/macOS 알림/기타 — 결정 필요)
-- [ ] Claude API로 "오늘의 자산 요약 + 관련 뉴스 브리핑" 생성
-- [ ] CLI 명령어 설계 (`assetpilot status`, `assetpilot news`, `assetpilot brief` 등)
+- [x] 알림 채널 결정 및 구현 — macOS 알림센터로 결정. `assetpilot notify-briefing`이 `data/ai_briefing.json`의 `overall_summary`를 알림으로 띄움. 클릭 시 `data/dashboard.html`이 열리도록 `terminal-notifier`(Homebrew) 설치 및 연동 완료 — 미설치 환경에서는 클릭 액션 없는 `osascript display notification`으로 자동 폴백. `scripts/launchd/run_briefing.sh`가 헤드리스 `claude -p` 분석 → `assetpilot dashboard --no-open`(대시보드 최신화) → `assetpilot notify-briefing` 순으로 자동 호출하므로 16:00/07:00 갱신 시마다 최신 대시보드로 연결되는 알림이 뜬다
+- [x] "오늘의 자산 요약 + 관련 뉴스 브리핑" 생성 — Phase 4에서 이미 구현됨(`data/ai_briefing.json`, 헤드리스 `claude -p` 방식). Claude API 직접 호출이 아니라 Claude Code 세션 자체를 쓰는 방식으로 대체 완료(빌링 불필요)
+- [ ] CLI 명령어 설계 (`assetpilot status`, `assetpilot news`, `assetpilot brief` 등) — 개별 명령은 이미 있음(`status`/`news`/`notify-briefing` 등), `brief` 통합 명령 여부는 보류
 
 ## Phase 6 — 테스트 & 안정화
 - [ ] 통합 테스트 (목데이터 + 실제 API 소량 검증)
-- [ ] 토큰 만료/네트워크 오류 등 예외 시나리오 테스트
+- [ ] 토큰 만료/네트워크 오류 등 예외 시나리오 테스트 — 08-18 아침 실패(구글 뉴스 RSS 타임아웃)로 `fetch_google_news`에 재시도 로직만 우선 추가함. 토스 API 쪽(토큰 만료 등)은 아직 미점검
 - [ ] 로깅 체계 구축 (요청/응답, 에러 추적)
 - [ ] README 및 설정 가이드 작성
 
